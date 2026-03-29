@@ -14,7 +14,7 @@ This loop is the engine of Saathi. Everything else in the larger vision (convers
 
 ## Core Principle
 
-My belief is that users along with trusted and curated content, they need to feel progress.
+Good content is not enough. Users need to feel progress.
 
 ## Inputs
 
@@ -34,9 +34,9 @@ These are choices I'm making based on my hypotheses about what will work:
 
 ## Scope
 
-**In scope:** User State Classifier, Concept Extractor, Recap Engine, Quiz Engine, Response Evaluator, Knowledge State Updater, Recommendation Engine, Recall Scheduler. Details on each component are in 05-solution-overview.md.
+This prototype covers eight components: User State Classifier, Concept Extractor, Recap Engine, Quiz Engine, Response Evaluator, Knowledge State Updater, Recommendation Engine, and Recall Scheduler. Details on each are in [05-solution-overview.md](05-solution-overview.md).
 
-**Out of scope:** Conversational mode (separate layer, needs chat UI), leaderboards (wrong incentive), complex ML recommendation (rule-based is sufficient for v1), voice/video generation (over-engineered), full RAG (unnecessary complexity), onboarding assessment (needs extended user interaction), skill trees (add after the loop works), social signals (needs real user data).
+Everything else in the larger Saathi vision (conversational mode, skill trees, progress dashboards, social signals) is outside the scope of this prototype and documented in [03-ai-vision.md](03-ai-vision.md).
 
 ## What the Prototype Must Prove
 

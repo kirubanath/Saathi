@@ -1,16 +1,35 @@
 # Solution Overview
 
-This document describes each component of the proactive learning loop, with formulas and examples. For the full AI vision, see [03-ai-vision.md](03-ai-vision.md). For the scoped problem, see [04-scoped-problem.md](04-scoped-problem.md).
+This document describes the proactive learning loop. For the full AI vision, see [03-ai-vision.md](03-ai-vision.md). For the scoped problem, see [04-scoped-problem.md](04-scoped-problem.md).
 
 ---
 
-## How the Loop Runs
+## How the Loop Works
 
-**Trigger:** The proactive loop fires when a user reaches 80% watch completion on a video. Most users who get to 80% have absorbed the content. Waiting for 100% loses users who skip the last few seconds.
+The loop fires when a user reaches 80% watch completion on a video. Waiting for 100% would lose users who skip the last few seconds. When a user opens the app with pending recall questions, recalls surface first before normal browsing resumes.
 
-**Session entry:** When a user opens the app and has pending recall questions, recalls surface first (top 3-5 by priority). After recalls are completed or dismissed, the user browses and watches normally.
+```mermaid
+flowchart TD
+    A[User watches video to 80%] --> B[Classify user state]
+    B --> C{Full loop?}
+    C -- "IS + utility" --> D[Warm nudge + recommendation]
+    C -- "AS + aspiration" --> E[Extract concepts from transcript]
+    E --> F[Generate recap weighted to weak spots]
+    F --> G[Run adaptive quiz]
+    G --> H[Update knowledge state]
+    H --> I[Show progress update]
+    I --> J[Recommend next video]
+    J --> K[Schedule recall]
+    K --> L[Next session]
+    D --> L
+    L --> M{Pending recalls?}
+    M -- Yes --> N[Surface top recalls]
+    N --> O[Update knowledge state]
+    O --> A
+    M -- No --> A
+```
 
-**Full sequence after trigger:** Classify user state -> extract concepts -> generate recap -> run quiz -> evaluate responses -> update knowledge state -> show progress update -> generate recommendation -> schedule recall.
+Classification drives everything. The same video produces a completely different experience depending on who watched it. For users who get the full loop, every interaction feeds back into the knowledge state, which shapes the next interaction. The loop is closed.
 
 ---
 
