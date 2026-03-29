@@ -1,0 +1,31 @@
+[
+  {
+    "user_id": "user_priya_001",
+    "name": "Priya",
+    "user_type": "aspiration_seeker",
+    "maturity": "warming_up",
+    "tenure_days": 14,
+    "knowledge_state": {
+      "interview_skills": {
+        "body_language": 0.3,
+        "voice_modulation": 0.7,
+        "answering_structure": 0.3,
+        "handling_nervousness": 0.5
+      }
+    },
+    "watch_history": [],
+    "question_history": [],
+    "recall_schedule": []
+  },
+  {
+    "user_id": "user_rahul_001",
+    "name": "Rahul",
+    "user_type": "information_seeker",
+    "maturity": "new",
+    "tenure_days": 3,
+    "knowledge_state": {},
+    "watch_history": [],
+    "question_history": [],
+    "recall_schedule": []
+  }
+]

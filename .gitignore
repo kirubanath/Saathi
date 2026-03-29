@@ -1,0 +1,15 @@
+# Virtual environments
+.venv/
+.env
+
+# Python-specific
+__pycache__/
+.python-version
+uv.lock
+
+# macOS files
+.DS_Store
+
+# Project-specific
+research/
+CLAUDE.md

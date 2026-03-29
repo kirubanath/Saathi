@@ -1,0 +1,5 @@
+anthropic
+streamlit
+click
+rich
+python-dotenv
