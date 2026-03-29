@@ -12,7 +12,7 @@ This folder contains the complete documentation for the Saathi project, my AI le
 
 **[04-scoped-problem.md](04-scoped-problem.md)** - What this prototype actually builds: the proactive learning loop. Inputs, constraints, and scope boundaries.
 
-**[05-solution-overview.md](05-solution-overview.md)** - Technical reference. Every component, every formula, every metric.
+**[05-solution-overview.md](05-solution-overview.md)** - Three phases: preprocessing, session start, and the per-video pipeline. Every component, formula, data structure, and metric.
 
 **[06-demo-overview.md](06-demo-overview.md)** - How the demo works: format, users, journeys, and flow.
 

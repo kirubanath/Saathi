@@ -66,6 +66,10 @@ The system runs in three phases. All LLM work happens in preprocessing. The sess
 
 **3. Question Generator:** For each concept, generates questions at easy, medium, and hard difficulty. Multiple questions per level to support rotation. Stored in the question bank, used for both the in-session quiz and future recall.
 
+**Session Start (once per session, before browsing):**
+
+When a user opens the app, two checks run before normal browsing begins. If pending recalls are due, the top 3-5 surface first by priority (urgency x importance). The user can complete them or dismiss and go straight to browsing. If the user finished a content series in their previous session, a milestone summary shows after recalls (or immediately if none are due). Both checks are independent of the per-video pipeline.
+
 **Per-Video Pipeline (fires at 80% watch completion):**
 
 **4. User State Classifier:** Reads profile and watch history, outputs content type, user type, and maturity. Content type is the first gate: entertainment and utility get a recommendation only. Aspiration activates the full pipeline. User type (IS, Converting, AS) and maturity (New, Warming Up, Established) determine intensity within aspiration content.
@@ -76,7 +80,7 @@ The system runs in three phases. All LLM work happens in preprocessing. The sess
 
 **7. Response Evaluator:** Deterministic. Correct index check. No LLM. Skipped questions scored as 0. Skipped quiz means no recall scheduled.
 
-**8. Knowledge State Updater:** EMA-based per-concept scores. Quiz alpha = 0.3, recall alpha = 0.15. Passive watch bump capped at 1.0. No passive decay.
+**8. Knowledge State Updater:** EMA-based per-concept scores. Quiz alpha = 0.3, recall alpha = 0.15. Passive watch bump capped at 0.8. No passive decay.
 
 **9. Progress Update:** Shows the user what changed after the quiz. "Body Language: 30% to 51%." Shifts to encouragement if scores dropped. Shown for AS and Converting users only.
 

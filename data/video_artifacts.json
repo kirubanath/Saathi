@@ -1,0 +1,598 @@
+{
+  "vid_001": {
+    "video_id": "vid_001",
+    "category": "Career & Jobs",
+    "content_type": "aspiration",
+    "concept_profile": {
+      "body_language": 0.9,
+      "voice_modulation": 0.8,
+      "answering_structure": 0.6,
+      "handling_nervousness": 0.5
+    },
+    "recap_bullets": {
+      "body_language": {
+        "IS": "Sitting upright and keeping your hands calm makes a strong first impression without saying a word.",
+        "AS": "Body language speaks before you do. Posture, eye contact, and hand stillness are learnable signals that interviewers read before you answer the first question."
+      },
+      "voice_modulation": {
+        "IS": "Speaking at a steady pace with clear diction keeps the interviewer's attention even when your content is simple.",
+        "AS": "Voice modulation is a craft. Vary your pace, lower your pitch when making a key point, and pause before answering. Practiced delivery signals confidence and preparation."
+      },
+      "answering_structure": {
+        "IS": "Take a breath before answering. A short pause to collect your thoughts reads as confidence, not hesitation.",
+        "AS": "Structure is a skill. What you did, how you did it, and what happened. Once that frame is automatic, your answers become easier to follow and harder to dismiss."
+      },
+      "handling_nervousness": {
+        "IS": "Taking three slow breaths before you walk in reduces the visible signs of nervousness more than any mental trick.",
+        "AS": "Nervousness is a signal, not a verdict. Channel it into alertness rather than trying to suppress it. Interviewers distinguish between nervous excitement and unpreparedness."
+      }
+    },
+    "questions": {
+      "body_language": {
+        "easy": [
+          {
+            "id": "q_bl_e_001",
+            "text": "What does sitting upright signal to an interviewer?",
+            "options": ["Nervousness", "Confidence and preparedness", "Disinterest", "Familiarity"],
+            "correct_index": 1
+          },
+          {
+            "id": "q_bl_e_002",
+            "text": "Which of the following is a body language signal the interviewer reads before you speak?",
+            "options": ["Your vocabulary", "Your posture", "Your qualifications", "Your resume"],
+            "correct_index": 1
+          }
+        ],
+        "medium": [
+          {
+            "id": "q_bl_m_001",
+            "text": "You are nervous and tend to fidget. What is the most effective body language adjustment before an interview?",
+            "options": ["Speak faster to move past the nerves", "Keep hands still and rest them on the table", "Avoid eye contact to reduce pressure", "Cross your arms to appear composed"],
+            "correct_index": 1
+          },
+          {
+            "id": "q_bl_m_002",
+            "text": "An interviewer glances away while you are answering. What should you do?",
+            "options": ["Speed up your answer to finish sooner", "Slow your pace and make deliberate eye contact", "Ask if they have any questions", "Repeat the question back to them"],
+            "correct_index": 1
+          }
+        ],
+        "hard": [
+          {
+            "id": "q_bl_h_001",
+            "text": "You notice your body language is closed but your answer is strong. What does research on interviewer perception suggest?",
+            "options": ["Strong answers always outweigh body language", "Interviewers weight non-verbal signals heavily in first impressions, sometimes more than content", "Closed posture signals focus and is read positively", "Body language only matters after the first 10 minutes"],
+            "correct_index": 1
+          }
+        ]
+      },
+      "voice_modulation": {
+        "easy": [
+          {
+            "id": "q_vm_e_001",
+            "text": "What does speaking at a steady pace signal to an interviewer?",
+            "options": ["Anxiety", "Preparedness and confidence", "Disinterest", "Overconfidence"],
+            "correct_index": 1
+          },
+          {
+            "id": "q_vm_e_002",
+            "text": "Which vocal habit makes it harder for an interviewer to follow your answer?",
+            "options": ["Pausing before key points", "Speaking too fast without variation", "Lowering your pitch at the end of a sentence", "Taking a breath mid-sentence"],
+            "correct_index": 1
+          }
+        ],
+        "medium": [
+          {
+            "id": "q_vm_m_001",
+            "text": "You notice you are speaking too fast because of nerves. What is the most effective way to slow down mid-answer?",
+            "options": ["Stop completely and apologise", "Take a deliberate breath and let it reset your pace", "Ask the interviewer to repeat the question", "Finish the answer at the same speed and adjust next time"],
+            "correct_index": 1
+          },
+          {
+            "id": "q_vm_m_002",
+            "text": "When making a key point in your answer, which vocal adjustment has the most impact?",
+            "options": ["Raise your volume significantly", "Lower your pitch and slow down slightly", "Speed up to show enthusiasm", "Maintain exactly the same tone throughout"],
+            "correct_index": 1
+          }
+        ],
+        "hard": [
+          {
+            "id": "q_vm_h_001",
+            "text": "You are interviewing for a role that requires calm under pressure. How should your voice modulation reflect this in your answers?",
+            "options": ["Speak loudly to project strength", "Maintain a consistent, measured pace with deliberate pauses rather than rushing", "Vary your pitch dramatically to show engagement", "Mirror the interviewer's pace exactly regardless of your own comfort"],
+            "correct_index": 1
+          }
+        ]
+      },
+      "answering_structure": {
+        "easy": [
+          {
+            "id": "q_as_e_001",
+            "text": "What is the three-part structure recommended for answering behavioural questions?",
+            "options": ["Problem, solution, outcome", "What you did, how you did it, what happened", "Introduction, body, conclusion", "Situation, task, result"],
+            "correct_index": 1
+          },
+          {
+            "id": "q_as_e_002",
+            "text": "Why is a structured answer easier for an interviewer to follow?",
+            "options": ["It is shorter", "It has a clear beginning, middle, and end that is predictable to follow", "It avoids all technical detail", "It is more formal than unstructured answers"],
+            "correct_index": 1
+          }
+        ],
+        "medium": [
+          {
+            "id": "q_as_m_001",
+            "text": "You are asked: 'Tell me about a time you handled a difficult situation at work.' Which answer opening is best?",
+            "options": ["'I am a problem solver by nature...'", "'At my previous job, I faced a situation where the deadline moved by two days. What I did was...'", "'Difficult situations are common in any workplace.'", "'I have handled many difficult situations throughout my career.'"],
+            "correct_index": 1
+          },
+          {
+            "id": "q_as_m_002",
+            "text": "Your answer is running long. What is the right way to close it without losing the interviewer?",
+            "options": ["Keep going until you have said everything", "Jump to the outcome: what happened and what you learned", "Ask the interviewer if they want more detail", "Stop and say you are done"],
+            "correct_index": 1
+          }
+        ],
+        "hard": [
+          {
+            "id": "q_as_h_001",
+            "text": "An interviewer asks a vague question: 'Tell me about yourself.' How should you structure your answer to signal both competence and self-awareness?",
+            "options": ["Summarise your resume in order", "Choose one or two relevant threads, explain why they matter for this role, and land on what you are looking for next", "Talk about your personal background before your professional one", "Ask for clarification before answering"],
+            "correct_index": 1
+          }
+        ]
+      },
+      "handling_nervousness": {
+        "easy": [
+          {
+            "id": "q_hn_e_001",
+            "text": "What is the recommended physical technique to reduce visible nervousness before entering an interview?",
+            "options": ["Drink a lot of water", "Take three slow breaths", "Walk quickly to build energy", "Review your notes at the last minute"],
+            "correct_index": 1
+          },
+          {
+            "id": "q_hn_e_002",
+            "text": "What does the video suggest about how interviewers view nervousness?",
+            "options": ["It always makes a bad impression", "They cannot detect it", "They distinguish between nervous excitement and unpreparedness", "It is a disqualifying factor"],
+            "correct_index": 2
+          }
+        ],
+        "medium": [
+          {
+            "id": "q_hn_m_001",
+            "text": "You blank out on a question mid-interview. What is the most effective response?",
+            "options": ["End the answer early and move on", "Apologise and ask to skip it", "Pause, take a breath, and say you are gathering your thoughts before continuing", "Repeat the question back to buy time"],
+            "correct_index": 2
+          },
+          {
+            "id": "q_hn_m_002",
+            "text": "Before a high-pressure interview, which approach best channels nervousness into useful energy?",
+            "options": ["Try to eliminate the feeling entirely", "Remind yourself that the feeling is alertness, not fear, and let it sharpen your focus", "Distract yourself with unrelated thoughts", "Avoid thinking about the interview until you are called in"],
+            "correct_index": 1
+          }
+        ],
+        "hard": [
+          {
+            "id": "q_hn_h_001",
+            "text": "You are visibly nervous and you know it. You have 30 seconds before you are called in. What combination of actions is most effective?",
+            "options": ["Review your notes and rehearse your answers one more time", "Three slow breaths to reset your body, then one grounding thought about why you are qualified", "Think about something unrelated to reduce anxiety", "Do nothing and rely on adrenaline to sharpen your performance"],
+            "correct_index": 1
+          }
+        ]
+      }
+    }
+  },
+  "vid_002": {
+    "video_id": "vid_002",
+    "category": "Career & Jobs",
+    "content_type": "aspiration",
+    "concept_profile": {
+      "handling_nervousness": 0.9,
+      "voice_modulation": 0.7,
+      "body_language": 0.5,
+      "preparation": 0.4
+    },
+    "recap_bullets": {
+      "handling_nervousness": {
+        "IS": "Three slow breaths before walking in is the single most effective thing you can do to reduce visible nervousness.",
+        "AS": "Nervousness is energy. The goal is not to eliminate it but to redirect it into alertness. Interviewers read the difference between anxious hesitation and focused calm."
+      },
+      "voice_modulation": {
+        "IS": "Slow down when you feel nervous. A deliberate pause before answering sounds like confidence, not hesitation.",
+        "AS": "Your voice is the first thing the interviewer hears. A measured pace and lower pitch on key points signals that you are in control, not just filling silence."
+      },
+      "body_language": {
+        "IS": "Sit upright and keep your hands on the table. Small adjustments to posture change how you feel as much as how you look.",
+        "AS": "Physical stillness is a learned skill. Rooting your posture before the interview starts creates a baseline your body can return to when nerves spike mid-answer."
+      },
+      "preparation": {
+        "IS": "Know one specific thing about the company before you go in. It is enough to show you did not walk in blind.",
+        "AS": "Preparation is not about memorising answers. It is about narrowing uncertainty. The more you reduce unknowns before the room, the more cognitive space you have for the questions themselves."
+      }
+    },
+    "questions": {
+      "handling_nervousness": {
+        "easy": [
+          {
+            "id": "q2_hn_e_001",
+            "text": "What is the simplest physical technique to reduce nervousness before entering an interview?",
+            "options": ["Do jumping jacks", "Take three slow breaths", "Splash cold water on your face", "Repeat affirmations"],
+            "correct_index": 1
+          }
+        ],
+        "medium": [
+          {
+            "id": "q2_hn_m_001",
+            "text": "You feel your heart racing right before you are called in. What is the most useful reframe?",
+            "options": ["Tell yourself nervousness does not matter", "Recognise it as alertness and redirect it toward focus", "Try to slow your heart rate through distraction", "Remind yourself that everyone gets nervous"],
+            "correct_index": 1
+          }
+        ],
+        "hard": [
+          {
+            "id": "q2_hn_h_001",
+            "text": "A candidate who is clearly nervous but gives structured, confident answers will typically be evaluated how, compared to a calm candidate with vague answers?",
+            "options": ["Lower, because nerves signal unpreparedness", "Higher, because content and structure outweigh visible nerves in most interview formats", "The same, because interviewers are trained to ignore nerves", "It depends entirely on the role"],
+            "correct_index": 1
+          }
+        ]
+      },
+      "voice_modulation": {
+        "easy": [
+          {
+            "id": "q2_vm_e_001",
+            "text": "When you are nervous, your speech tends to speed up. What is the most effective correction mid-answer?",
+            "options": ["Stop and restart the answer", "Take a breath and consciously slow your next sentence", "Ask the interviewer to wait", "Continue at the same pace"],
+            "correct_index": 1
+          }
+        ],
+        "medium": [
+          {
+            "id": "q2_vm_m_001",
+            "text": "Which vocal signal most strongly communicates confidence in a high-pressure interview?",
+            "options": ["Speaking loudly throughout", "Maintaining a consistent pace with deliberate pauses before key points", "Matching the interviewer's speed exactly", "Varying volume dramatically"],
+            "correct_index": 1
+          }
+        ],
+        "hard": [
+          {
+            "id": "q2_vm_h_001",
+            "text": "You are asked a question you did not prepare for. What voice modulation strategy minimises the impression of being caught off-guard?",
+            "options": ["Answer immediately at normal speed to seem confident", "Pause briefly, lower your pace, and begin with a framing sentence before your actual answer", "Ask for the question to be repeated", "Acknowledge you are surprised and then answer"],
+            "correct_index": 1
+          }
+        ]
+      },
+      "body_language": {
+        "easy": [
+          {
+            "id": "q2_bl_e_001",
+            "text": "Which posture adjustment has the most immediate effect on how calm you appear?",
+            "options": ["Leaning forward", "Sitting upright with hands resting still", "Crossing your legs", "Facing slightly away from the interviewer"],
+            "correct_index": 1
+          }
+        ],
+        "medium": [
+          {
+            "id": "q2_bl_m_001",
+            "text": "Midway through your answer your hands start fidgeting. What is the best corrective action?",
+            "options": ["Hide your hands under the table", "Deliberately rest both hands flat on the table and continue your answer without breaking eye contact", "Stop and acknowledge the fidgeting", "Speed up to finish before it becomes noticeable"],
+            "correct_index": 1
+          }
+        ],
+        "hard": [
+          {
+            "id": "q2_bl_h_001",
+            "text": "Research shows that adopting an open posture before a high-stakes interaction affects not only how others perceive you but also your own hormonal state. What is the practical implication for interview preparation?",
+            "options": ["Posture adjustment should happen during the interview, not before", "Setting your physical baseline two to three minutes before entering can meaningfully affect your confidence from the first moment", "The effect is too small to be worth deliberate attention", "It only applies in standing situations, not seated interviews"],
+            "correct_index": 1
+          }
+        ]
+      },
+      "preparation": {
+        "easy": [
+          {
+            "id": "q2_pr_e_001",
+            "text": "What is the minimum level of company research that prevents an obviously unprepared impression?",
+            "options": ["Memorising the company's founding story", "Knowing one specific recent thing about the company or role", "Reading every press release from the past year", "No research is needed if your skills are strong"],
+            "correct_index": 1
+          }
+        ],
+        "medium": [
+          {
+            "id": "q2_pr_m_001",
+            "text": "You have limited time before an interview. Which preparation activity gives the highest return?",
+            "options": ["Memorising three answers word for word", "Identifying the two or three things the interviewer is most likely to probe and having a clear thread for each", "Reviewing your resume in full", "Practising your handshake and greeting"],
+            "correct_index": 1
+          }
+        ],
+        "hard": [
+          {
+            "id": "q2_pr_h_001",
+            "text": "What does reducing pre-interview uncertainty achieve beyond just better answers?",
+            "options": ["It eliminates nervousness entirely", "It frees cognitive capacity so you can listen and respond to the actual conversation rather than running rehearsed scripts", "It guarantees you will not blank out", "It makes the interviewer's questions predictable"],
+            "correct_index": 1
+          }
+        ]
+      }
+    }
+  },
+  "vid_003": {
+    "video_id": "vid_003",
+    "category": "Career & Jobs",
+    "content_type": "aspiration",
+    "concept_profile": {
+      "body_language": 0.9,
+      "handling_nervousness": 0.6,
+      "voice_modulation": 0.5,
+      "answering_structure": 0.4
+    },
+    "recap_bullets": {
+      "body_language": {
+        "IS": "Eye contact, stillness, and upright posture are the three signals that create a strong first impression before you say anything.",
+        "AS": "Body language is not about looking confident. It is about removing the signals that undercut your words. Stillness, eye contact, and open posture are each a learnable habit, not a personality trait."
+      },
+      "handling_nervousness": {
+        "IS": "Nervous energy shows in your hands and your pace. Settling both before you speak buys you time to get into your answer.",
+        "AS": "Nerves spike at the start of an interview. Anchoring your posture and slowing your first sentence creates a physical baseline your body will return to as the conversation progresses."
+      },
+      "voice_modulation": {
+        "IS": "A slower first sentence gives you time to settle and signals to the interviewer that you are not rushing.",
+        "AS": "The first sentence sets the tone for the entire answer. A deliberate pace from the start makes everything that follows easier to follow."
+      },
+      "answering_structure": {
+        "IS": "Before answering, a one-second pause to locate your opening point is enough to make your answer sound organised.",
+        "AS": "Unstructured answers lose the interviewer before you reach your best point. A clear opening sentence about what you will cover anchors everything that follows."
+      }
+    },
+    "questions": {
+      "body_language": {
+        "easy": [
+          {
+            "id": "q3_bl_e_001",
+            "text": "Which three non-verbal signals create the strongest first impression in an interview?",
+            "options": ["Smile, firm handshake, loud voice", "Eye contact, stillness, and upright posture", "Leaning forward, nodding, and speaking first", "Relaxed posture, crossed arms, and steady gaze"],
+            "correct_index": 1
+          }
+        ],
+        "medium": [
+          {
+            "id": "q3_bl_m_001",
+            "text": "The interviewer is speaking and you want to signal engagement. Which body language response is most effective?",
+            "options": ["Take notes continuously", "Maintain steady eye contact with occasional natural nods", "Lean back to appear relaxed", "Look at your notes to show you are prepared"],
+            "correct_index": 1
+          }
+        ],
+        "hard": [
+          {
+            "id": "q3_bl_h_001",
+            "text": "Body language habits are difficult to change under pressure. What is the most reliable strategy for sustainable improvement?",
+            "options": ["Consciously monitor all signals during the interview", "Build one habit at a time in low-stakes situations until it becomes automatic", "Focus only on eye contact since it has the highest impact", "Practise in front of a mirror the night before"],
+            "correct_index": 1
+          }
+        ]
+      },
+      "handling_nervousness": {
+        "easy": [
+          {
+            "id": "q3_hn_e_001",
+            "text": "Nervous energy most visibly shows up in which two places?",
+            "options": ["Voice pitch and eye colour", "Hands and speech pace", "Posture and clothing choice", "Facial expression and height"],
+            "correct_index": 1
+          }
+        ],
+        "medium": [
+          {
+            "id": "q3_hn_m_001",
+            "text": "You are in the interview and your nerves are spiking. Which single adjustment has the fastest calming effect?",
+            "options": ["Think about a past success", "Plant your feet flat, rest your hands still, and take one slow breath before your next sentence", "Ask for a glass of water", "Remind yourself the interviewer is nervous too"],
+            "correct_index": 1
+          }
+        ],
+        "hard": [
+          {
+            "id": "q3_hn_h_001",
+            "text": "Why do nerves typically spike at the start of an interview rather than in the middle?",
+            "options": ["The hardest questions come first", "Uncertainty is highest before the conversation finds its rhythm, and the body responds to uncertainty with activation", "Interviewers deliberately create pressure at the start", "The physical environment is unfamiliar at the start but familiar by the middle"],
+            "correct_index": 1
+          }
+        ]
+      },
+      "voice_modulation": {
+        "easy": [
+          {
+            "id": "q3_vm_e_001",
+            "text": "What effect does slowing your first sentence have in a high-pressure interview?",
+            "options": ["It makes you seem unsure", "It gives you time to settle and signals to the interviewer that you are not rushing", "It is only useful if you are very nervous", "It makes the answer sound rehearsed"],
+            "correct_index": 1
+          }
+        ],
+        "medium": [
+          {
+            "id": "q3_vm_m_001",
+            "text": "You start your answer too fast and notice it. What is the best in-the-moment fix?",
+            "options": ["Stop and apologise", "Complete the sentence at speed and take a deliberate breath before the next one", "Ask to start over", "Lower your volume instead"],
+            "correct_index": 1
+          }
+        ],
+        "hard": [
+          {
+            "id": "q3_vm_h_001",
+            "text": "Why does the pace of the first sentence have an outsized effect on the rest of the answer?",
+            "options": ["Interviewers only evaluate the first sentence", "It sets a cognitive and physical tempo that is difficult to break mid-answer, so starting slower anchors the whole response", "Fast opening sentences are always penalised in interviews", "It forces the interviewer to slow down too"],
+            "correct_index": 1
+          }
+        ]
+      },
+      "answering_structure": {
+        "easy": [
+          {
+            "id": "q3_as_e_001",
+            "text": "What does a one-second pause before answering communicate to the interviewer?",
+            "options": ["That you do not know the answer", "That you are organising your thoughts, which reads as confidence", "That you are bored", "That you need the question repeated"],
+            "correct_index": 1
+          }
+        ],
+        "medium": [
+          {
+            "id": "q3_as_m_001",
+            "text": "Your answer is well-structured but the interviewer looks confused. What is the most likely cause?",
+            "options": ["The answer is too long", "Your opening sentence did not signal what was coming, so the structure was invisible to the listener", "You used too many examples", "The question was unclear"],
+            "correct_index": 1
+          }
+        ],
+        "hard": [
+          {
+            "id": "q3_as_h_001",
+            "text": "When is it more effective to state your conclusion first rather than building to it at the end?",
+            "options": ["Never, building tension is always more engaging", "When the interviewer needs to quickly assess fit and does not have time to follow a long narrative to its conclusion", "Only in written communication, not spoken answers", "When the answer involves technical detail"],
+            "correct_index": 1
+          }
+        ]
+      }
+    }
+  },
+  "vid_004": {
+    "video_id": "vid_004",
+    "category": "Career & Jobs",
+    "content_type": "aspiration",
+    "concept_profile": {
+      "answering_structure": 0.9,
+      "preparation": 0.7,
+      "voice_modulation": 0.5,
+      "body_language": 0.3
+    },
+    "recap_bullets": {
+      "answering_structure": {
+        "IS": "What you did, how you did it, and what happened. That three-part frame works for almost any behavioural question.",
+        "AS": "A structured answer is not a rigid script. It is a frame that keeps the interviewer with you. Once automatic, it frees your attention for the actual conversation."
+      },
+      "preparation": {
+        "IS": "Prepare two or three strong examples from your past work. They can answer most behavioural questions with small adjustments.",
+        "AS": "Preparation is about building a small inventory of transferable stories. Each story covers multiple competencies. The goal is not to have an answer for every question but to have strong raw material you can shape in the moment."
+      },
+      "voice_modulation": {
+        "IS": "Pause before the key point in your answer. That pause tells the interviewer: this is the part that matters.",
+        "AS": "The way you say something shapes how it lands. The same answer delivered with deliberate pacing and emphasis on the outcome sounds like a different answer from the same words delivered flat."
+      },
+      "body_language": {
+        "IS": "Lean slightly forward when you reach the main point of your answer. It signals engagement and makes the point land harder.",
+        "AS": "Physical alignment with verbal content is what makes an answer feel complete. When your body and your words point at the same thing, the interviewer registers both."
+      }
+    },
+    "questions": {
+      "answering_structure": {
+        "easy": [
+          {
+            "id": "q4_as_e_001",
+            "text": "Which question format is best answered using a what-you-did, how-you-did-it, what-happened structure?",
+            "options": ["Technical knowledge questions", "Behavioural questions about past experience", "Salary negotiation", "Questions about company knowledge"],
+            "correct_index": 1
+          }
+        ],
+        "medium": [
+          {
+            "id": "q4_as_m_001",
+            "text": "You have a strong example but it is from three years ago and not directly related to the role. How should you frame it?",
+            "options": ["Avoid using it and find a more recent example", "Use the structure to tell it clearly, then close with what you would do differently now given the new context", "Present it without adaptation and let the interviewer draw their own conclusion", "Apologise for its age before telling it"],
+            "correct_index": 1
+          }
+        ],
+        "hard": [
+          {
+            "id": "q4_as_h_001",
+            "text": "An interviewer interrupts your answer to ask a follow-up before you have finished. What is the best response?",
+            "options": ["Insist on finishing your original answer first", "Answer the follow-up directly and then close your original point in one sentence if it is still relevant", "Lose your structure and answer the follow-up as a standalone question", "Ask which question they want you to answer"],
+            "correct_index": 1
+          }
+        ]
+      },
+      "preparation": {
+        "easy": [
+          {
+            "id": "q4_pr_e_001",
+            "text": "How many strong personal examples should you prepare before a behavioural interview?",
+            "options": ["Ten or more, one per possible question", "Two or three that can be adapted across different questions", "None, you should answer spontaneously to seem authentic", "One very detailed example that covers everything"],
+            "correct_index": 1
+          }
+        ],
+        "medium": [
+          {
+            "id": "q4_pr_m_001",
+            "text": "You prepared three examples but the interviewer asks a question none of them cover directly. What do you do?",
+            "options": ["Say you do not have a relevant example", "Choose the closest example, frame it to highlight the relevant elements, and close by acknowledging what is different", "Make up a hypothetical scenario", "Ask what kind of answer they are looking for"],
+            "correct_index": 1
+          }
+        ],
+        "hard": [
+          {
+            "id": "q4_pr_h_001",
+            "text": "What is the strategic advantage of preparing transferable stories rather than question-specific answers?",
+            "options": ["It reduces the total preparation time", "It gives you flexible raw material you can shape to any question, which is more effective under pressure than trying to retrieve a pre-matched script", "It makes you appear less rehearsed", "It covers more questions in less time"],
+            "correct_index": 1
+          }
+        ]
+      },
+      "voice_modulation": {
+        "easy": [
+          {
+            "id": "q4_vm_e_001",
+            "text": "What does a deliberate pause before your key point communicate to the interviewer?",
+            "options": ["That you forgot what you were saying", "That what follows is important and worth their attention", "That you are nervous", "That the answer is ending"],
+            "correct_index": 1
+          }
+        ],
+        "medium": [
+          {
+            "id": "q4_vm_m_001",
+            "text": "You want to emphasise the outcome of your example. Which combination of vocal techniques is most effective?",
+            "options": ["Speak louder and faster to show excitement", "Slow down, lower your pitch slightly, and let the outcome sentence stand on its own before moving on", "Use exactly the same tone as the rest of the answer to avoid sounding dramatic", "Ask the interviewer if they want more detail before stating the outcome"],
+            "correct_index": 1
+          }
+        ],
+        "hard": [
+          {
+            "id": "q4_vm_h_001",
+            "text": "Two candidates give identical answers. One delivers it with varied pacing and pauses at key moments. The other delivers it at a constant pace. How are they likely to be evaluated differently?",
+            "options": ["They will be evaluated identically since the content is the same", "The varied delivery will register as more confident and the key points will be remembered more clearly by the interviewer", "The constant pace will be preferred as it appears more controlled", "Delivery only matters in customer-facing roles"],
+            "correct_index": 1
+          }
+        ]
+      },
+      "body_language": {
+        "easy": [
+          {
+            "id": "q4_bl_e_001",
+            "text": "When should you lean slightly forward during an interview answer?",
+            "options": ["At the start of every sentence", "When making the key point or outcome of your answer", "Continuously throughout the answer", "Only when the interviewer is writing notes"],
+            "correct_index": 1
+          }
+        ],
+        "medium": [
+          {
+            "id": "q4_bl_m_001",
+            "text": "Your verbal answer is strong but you lean back and look away at the key moment. What is the likely effect?",
+            "options": ["No effect, content is all that matters", "The point lands with less impact because the physical signal undercuts the verbal one", "The interviewer will ask you to repeat it", "It signals confidence and control"],
+            "correct_index": 1
+          }
+        ],
+        "hard": [
+          {
+            "id": "q4_bl_h_001",
+            "text": "Physical and verbal alignment means your body language matches what you are saying. Why does this matter beyond aesthetics?",
+            "options": ["It is a social nicety that makes interviews more comfortable", "When physical and verbal signals are consistent, the message registers as genuine rather than performed, which affects how the interviewer weighs the content", "It only matters in leadership-level interviews", "Interviewers are not consciously aware of physical alignment"],
+            "correct_index": 1
+          }
+        ]
+      }
+    }
+  },
+  "vid_005": {
+    "video_id": "vid_005",
+    "category": "Sarkari Kaam",
+    "content_type": "utility",
+    "concept_profile": {},
+    "recap_bullets": {},
+    "questions": {}
+  }
+}

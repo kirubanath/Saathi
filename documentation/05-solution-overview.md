@@ -22,6 +22,8 @@ flowchart TD
     E --> G["Questions stored per\nconcept and difficulty level"]
 ```
 
+
+
 ### Step 1: Concept Extraction
 
 Maps the transcript to the fixed concept taxonomy for that video's category. The taxonomy is authored once per skill-learning category, with 4-5 concepts per category. The extractor does not invent new concepts outside this taxonomy.
@@ -62,11 +64,7 @@ For each concept in the concept profile, the LLM generates questions across thre
 - **Medium:** Application. The user has to apply the concept to a scenario.
 - **Hard:** Synthesis. The user has to reason across concepts or handle an edge case.
 
-Multiple questions are generated per difficulty level to support rotation across quiz and recall sessions.
-
-Storage key: `question_bank[video_id][concept][difficulty][question_index]`
-
-These questions serve both the in-session quiz immediately after watching and future recall sessions days later. Generating them at ingestion time means no user ever triggers an LLM call during their interaction. 
+Multiple questions are generated per difficulty level to support rotation across quiz and recall sessions. They are stored inside the video dict, nested under `questions[concept][difficulty]`. The same structure serves both the in-session quiz and future recall sessions. Generating them at ingestion time means no user ever triggers an LLM call during their interaction. 
 
 ---
 
@@ -85,6 +83,8 @@ flowchart TD
     F --> G["Normal browsing"]
     E -- "No" --> G
 ```
+
+
 
 **Pending recalls** are surfaced first if any are due. The user sees the top 3-5 ranked by priority. They can complete them or dismiss and go straight to browsing. No penalty for dismissal.
 
@@ -120,6 +120,8 @@ flowchart TD
     D --> N
 ```
 
+
+
 ### The Three Classifiers
 
 **Content type** is the first gate. Set at the category level and authored editorially.
@@ -130,22 +132,24 @@ flowchart TD
 
 Some categories could go either way. Finance could be utility (check this one thing) or aspiration (build financial literacy over time). The default is set at the category level. Individual videos can override if needed, but for this prototype the category-level label is sufficient.
 
-**User type** is derived from watch history:
+**User type** is derived from watch history. Three types:
 
-- **Information Seeker (IS):** 70%+ of watched content is utility, or fewer than 3 total videos watched.
-- **Aspiration Seeker (AS):** 70%+ of watched content is aspiration, or 3+ videos in the same aspiration category.
-- **Converting:** Mixed pattern. 30-70% aspiration content, or an IS user who has recently watched aspiration content for the first time.
+- **Information Seeker (IS):** Primarily watches utility content or is very new to the platform. Comes for specific answers, not skill-building. Gets a low-pressure experience with no quiz.
+- **Aspiration Seeker (AS):** Clearly oriented toward skill-building. Either concentrates in a specific aspiration category or watches aspiration content broadly across categories. Gets the full loop: recap, quiz, recall.
+- **Converting:** In between. Showing some aspiration intent but not yet a consistent pattern. Gets the AS experience with guardrails: AS-toned bullets, quiz capped at medium difficulty, no recall scheduled yet.
 
 **Maturity** is derived from account tenure: New (0-7 days), Warming Up (1-4 weeks), Established (1+ month). Maturity does not change the pipeline shape. It affects two things: whether recall is scheduled (AS New users do not get recalls yet) and the recommendation engine's temperature.
 
 ### Pipeline Behavior by User Type
 
-| User Type | Recap | Quiz | Progress Update | Recommendation | Recall Scheduled |
-| --- | --- | --- | --- | --- | --- |
-| IS | IS bullets, top 2 by coverage | None | None | Yes, gentle nudge | No |
-| Converting | AS bullets, top 2 by coverage x gap | Top 2 concepts, difficulty capped at medium | Yes | Yes | No |
-| AS (New) | AS bullets, top 3 by coverage x gap | Top 3 concepts, difficulty capped at medium | Yes | Yes | No |
-| AS (Warming Up or Established) | AS bullets, top 3 by coverage x gap | Top 3 concepts, full difficulty range | Yes | Yes | Yes |
+
+| User Type                      | Recap                               | Quiz                                        | Progress Update | Recommendation    | Recall Scheduled |
+| ------------------------------ | ----------------------------------- | ------------------------------------------- | --------------- | ----------------- | ---------------- |
+| IS                             | IS bullets, top 2 by coverage       | None                                        | None            | Yes, gentle nudge | No               |
+| Converting                     | AS bullets, top 2 by coverage x gap | Top 2 concepts, difficulty capped at medium | Yes             | Yes               | No               |
+| AS (New)                       | AS bullets, top 3 by coverage x gap | Top 3 concepts, difficulty capped at medium | Yes             | Yes               | No               |
+| AS (Warming Up or Established) | AS bullets, top 3 by coverage x gap | Top 3 concepts, full difficulty range       | Yes             | Yes               | Yes              |
+
 
 The IS path is deliberately low-pressure. Rahul watches a Sarkari Kaam video about linking Aadhaar, gets his answer, and Saathi says: "Got it. Here's another one people found useful." No quiz, no score. If he then watches an aspiration video, Saathi shows two IS-toned bullets and a gentle recommendation. The goal is not to scare away a user who is still deciding whether this platform is for them.
 
@@ -160,6 +164,41 @@ Demo users: Priya (AS, Warming Up, 14 days, pre-loaded weak spots in `body_langu
 Reads the user profile and watch history and outputs three values: `content_type`, `user_type`, and `maturity`. Every downstream component reads from these. Runs first, before anything else.
 
 Also sets the recommendation engine's temperature: more exploration for new users, more targeting for established ones.
+
+**User type classification**
+
+Evaluated against the last 10 non-entertainment videos. Entertainment is excluded because it carries no utility or aspiration signal. If fewer than 10 non-entertainment videos exist, all available history is used.
+
+Conditions are checked in order. The first match wins.
+
+**Step 1 → IS (utility dominant):** utility% >= 50% in last 10 non-entertainment videos.
+
+A user who is at least half utility in recent history gets the IS experience regardless of any aspiration signal.
+
+**Step 2 → AS (depth):** 3+ videos in the same aspiration category in last 10.
+
+Category concentration is a strong intent signal. Three career videos in a row is not accidental browsing. This step fires before the new-user default so early concentrated intent is not suppressed.
+
+**Step 3 → IS (new user):** fewer than 5 non-entertainment videos total.
+
+At this point utility% is below 50% but there is not enough history to classify confidently. Default to IS. Step 2 already handled the case where a new user shows strong category intent.
+
+**Step 4 → AS (breadth):** aspiration% >= 70% in last 10.
+
+Handles the user who watches aspiration content broadly across multiple categories without concentrating in one. At this step we know: utility < 50%, no single-category concentration, and enough data exists (5+ videos).
+
+**Step 5 → Converting:** everything else.
+
+Mixed pattern or active transition. Aspiration intent is present but not yet dominant.
+
+| Case | Step that fires | Result |
+|---|---|---|
+| 7 utility + 3 career in last 10 | Step 1 (utility >= 50%) | IS |
+| 3 career videos, total 3 | Step 2 (3+ in career) | AS |
+| 2 aspiration videos, total 2 | Step 3 (< 5 total) | IS |
+| 4 career + 3 utility + 3 business in last 10 | Step 2 (4 in career, utility 30%) | AS |
+| 8 aspiration spread + 2 utility in last 10 | Step 4 (80% aspiration) | AS |
+| 5 aspiration + 4 utility in last 10 | Step 4 (55% aspiration, < 70%) | Converting |
 
 ---
 
@@ -179,7 +218,7 @@ Example for Priya (AS, Warming Up) after watching an interview confidence video,
 
 #### 3. Quiz Engine
 
-Selects questions from the pre-generated question bank for the same concepts the recap just covered, in the same rank order. No LLM call at this step.
+Selects questions from the video dict for the same concepts the recap just covered, in the same rank order. No LLM call at this step.
 
 One question per concept. Difficulty is set by the user's current concept score:
 
@@ -323,17 +362,21 @@ Correct recall doubles the interval. Wrong recall halves it, minimum 12 hours.
 
 **Missed recalls** are not penalized. The user did not fail the recall, they were simply not present. The entry reschedules to the next session at the same interval. After 3 misses, the interval is halved so the concept surfaces sooner.
 
-**Recall questions** are drawn from the pre-generated question bank, scoped to videos the user has already watched. Only questions generated from transcripts the user has seen are eligible. The `last_question_id` field prevents the same question from repeating back to back. As the user watches more videos covering a concept, the eligible question pool grows.
+**Recall questions** are drawn from the `questions` field of video dicts for videos the user has already watched. Only questions generated from transcripts the user has seen are eligible. The `last_question_id` field prevents the same question from repeating back to back. As the user watches more videos covering a concept, the eligible pool grows.
 
 ---
 
 ## Knowledge State Architecture
 
-Knowledge state is per-user, per-category. A concept like `body_language` is stable across many Career & Jobs videos. Mastery is a single score that grows over time, not fragmented per video.
+Two structures drive all runtime behavior: the user dict and the video dict.
 
-**User Profile**
+**User dict**
 
-Stores the inputs the classifier reads to determine user type and maturity.
+Contains the profile, knowledge state, and watch history for a single user. The classifier reads from here; the knowledge state updater writes to it.
+
+Knowledge state is per-category. A concept like `body_language` is stable across many Career & Jobs videos. Mastery is a single score that grows over time, not fragmented per video. A category only appears in `knowledge` once the user has watched a video and completed a quiz in it. Until then, the recommendation engine uses the 0.5 neutral prior for gap calculations.
+
+Watch history is used by the recommendation engine for the revisit penalty and by the recall scheduler to scope eligible questions to videos the user has already seen.
 
 ```json
 {
@@ -341,17 +384,7 @@ Stores the inputs the classifier reads to determine user type and maturity.
   "user_type": "AS",
   "maturity": "warming_up",
   "first_seen": "2026-03-15",
-  "total_videos_watched": 8
-}
-```
-
-**Knowledge State**
-
-A category only appears here once the user has watched a video and completed a quiz in it. Until then, the recommendation engine uses the 0.5 neutral prior for gap calculations.
-
-```json
-{
-  "user_id": "priya_001",
+  "total_videos_watched": 8,
   "knowledge": {
     "Career & Jobs": {
       "body_language": 0.51,
@@ -367,18 +400,7 @@ A category only appears here once the user has watched a video and completed a q
       "fluency": 0.0
     }
   },
-  "last_updated": "2026-03-28T14:30:00Z"
-}
-```
-
-**Watch History**
-
-Used by the recommendation engine for the revisit penalty and by the recall scheduler to scope eligible questions.
-
-```json
-{
-  "user_id": "priya_001",
-  "history": [
+  "watch_history": [
     {
       "video_id": "vid_003",
       "category": "Career & Jobs",
@@ -401,11 +423,16 @@ Used by the recommendation engine for the revisit penalty and by the recall sche
         "handling_nervousness": 1.0
       }
     }
-  ]
+  ],
+  "last_updated": "2026-03-28T14:30:00Z"
 }
 ```
 
-**Video Artifacts** (created at preprocessing)
+**Video dict**
+
+All preprocessing output for a single video: concept profile, recap bullets, and questions. Created once at ingestion. No LLM calls happen after this.
+
+Questions are stored per concept per difficulty, with multiple questions at each level to support rotation. The quiz engine picks one question per session; the recall scheduler draws from the same pool, filtered to videos the user has already watched.
 
 ```json
 {
@@ -423,63 +450,175 @@ Used by the recommendation engine for the revisit penalty and by the recall sche
       "IS": "Sitting upright and keeping your hands calm makes a strong first impression.",
       "AS": "Body language speaks before you do. Posture, eye contact, and hand stillness are learnable signals that interviewers read before you say a word."
     },
-    "voice_modulation": {
-      "IS": "Speaking at a steady pace and varying your tone keeps the other person engaged.",
-      "AS": "Voice modulation is a skill. Pace, pause, and pitch are controllable signals that signal confidence and hold attention."
+    "answering_structure": {
+      "IS": "Take a breath before answering. A short pause to collect your thoughts reads as confidence, not hesitation.",
+      "AS": "Structure is a skill. What you did, how you did it, and what happened. Once that frame is automatic, your answers become easier to follow and harder to dismiss."
+    }
+  },
+  "questions": {
+    "body_language": {
+      "easy": [
+        {
+          "id": "q_bl_e_001",
+          "text": "What does sitting upright signal to an interviewer?",
+          "options": ["Nervousness", "Confidence and preparedness", "Disinterest", "Familiarity"],
+          "correct_index": 1
+        },
+        {
+          "id": "q_bl_e_002",
+          "text": "Which of the following is a body language signal the interviewer reads before you speak?",
+          "options": ["Your vocabulary", "Your posture", "Your qualifications", "Your resume"],
+          "correct_index": 1
+        }
+      ],
+      "medium": [
+        {
+          "id": "q_bl_m_001",
+          "text": "You are nervous and tend to fidget. What is the most effective body language adjustment before an interview?",
+          "options": ["Speak faster to move past the nerves", "Keep hands still and rest them on the table", "Avoid eye contact to reduce pressure", "Cross your arms to appear composed"],
+          "correct_index": 1
+        },
+        {
+          "id": "q_bl_m_002",
+          "text": "An interviewer glances away while you are answering. What should you do?",
+          "options": ["Speed up your answer to finish sooner", "Slow your pace and make deliberate eye contact", "Ask if they have any questions", "Repeat the question back to them"],
+          "correct_index": 1
+        }
+      ],
+      "hard": [
+        {
+          "id": "q_bl_h_001",
+          "text": "You notice your body language is closed but your answer is strong. What does the research on interviewer perception suggest?",
+          "options": ["Strong answers always outweigh body language", "Interviewers weight non-verbal signals heavily in first impressions, sometimes more than content", "Closed posture signals focus and is read positively", "Body language only matters after the first 10 minutes"],
+          "correct_index": 1
+        }
+      ]
+    },
+    "answering_structure": {
+      "easy": [
+        {
+          "id": "q_as_e_001",
+          "text": "What is the three-part structure recommended for answering behavioral questions?",
+          "options": ["Problem, solution, outcome", "What you did, how you did it, what happened", "Introduction, body, conclusion", "Situation, task, result"],
+          "correct_index": 1
+        }
+      ],
+      "medium": [...],
+      "hard": [...]
     }
   }
 }
 ```
 
-Question bank: `question_bank[video_id][concept][difficulty][question_index]`
-
 ---
 
 ## Metrics
 
-Metrics are organized in four tiers, from what Seekho cares about most down to what the engineering team needs to keep the system calibrated. All metrics should be segmented by user type (IS, AS, Converting), maturity, and category where relevant. Averages across all users hide the real story.
+Nine metrics across two groups. The first two measure whether Saathi is working at the platform level. The remaining seven diagnose which part of the loop is functioning and which is not. All metrics should be segmented by user type (IS, AS, Converting) and maturity where relevant. Averages across all users obscure the actual pattern.
 
-### Tier 1: Business Metrics
+### Is Saathi working?
 
-**Subscription Retention (Saathi-engaged vs not):** Compare 30-day retention for users who completed at least one full loop (recap, quiz, recall) against users who only watched. If Saathi-engaged users do not retain better, the system is not solving the right problem.
+**1. Retention Lift**
 
-**IS to AS Conversion Rate:** Percentage of IS users who shift to AS content patterns within 3-5 sessions. This is the growth lever described in 03-ai-vision.md. If this is low, check whether the adjacent category nudges and IS soft recap are working by looking at recommendation acceptance rate and time to first aspiration content (Tier 2).
+Compares 30-day retention between users who completed at least one full loop (recap, quiz, recall) and users who only watched. This is the outcome Saathi is designed to move.
 
-**Revenue per User (Saathi-engaged vs not):** Average subscription duration x Rs 200/month. If Saathi increases retention, this compounds directly into revenue. Segment by user type to understand which users Saathi helps most.
+`Retention Lift = 30-day retention (Saathi-engaged) - 30-day retention (watch-only)`
 
-### Tier 2: Product Metrics
+A near-zero lift means the loop is not affecting whether users stay on the platform. The remaining metrics identify where it breaks down.
 
-**Quiz Completion Rate:** Percentage of users who complete the quiz when offered. If low, the quiz is either too hard, feels irrelevant, or appears at the wrong time. Segment by user type and maturity. A low rate for AS New users specifically might mean the medium difficulty cap is still too aggressive.
+---
 
-**Quiz Skip Rate:** Track separately from completion. High skip rates on specific categories may indicate the concept mapping for that category is weak or the questions feel disconnected from the video.
+**2. IS-to-AS Conversion Rate**
 
-**Recall Response Rate:** Scheduled recalls completed divided by recalls scheduled. If users ignore recalls consistently, check whether missed recalls correlate with churn.
+Tracks how many IS users are classified as Converting or AS at the 30-day mark. IS users who convert tend to stay longer and engage more consistently with the full loop. This is the core growth mechanism described in [03-ai-vision.md](03-ai-vision.md).
 
-**Recommendation Acceptance Rate:** Recommended videos watched divided by videos recommended. If low, check whether it is the same-category 80% failing (gap formula issue), the adjacent 15% (adjacency map issue), or the discovery 5% (expected to run lower by design).
+`Conversion Rate = IS users whose classifier output is Converting or AS at day 30 / IS users active for 30+ days`
 
-**Time to First Aspiration Content:** Sessions until an IS user watches their first aspiration video. Measures whether the nudge mechanism is working. If high, IS users are staying in utility loops and never encountering aspiration content.
+Status at day 30 is used, not whether reclassification ever happened. A user who briefly reached AS and then reverted to utility behavior will be classified IS again by the rolling window classifier and will not be counted. If the user has no session near day 30, their last known classification is used. Converting is counted because it represents a genuine and sustained behavioral shift toward aspiration content, even if full AS classification has not been reached. Low conversion typically surfaces first in Recommendation Acceptance Rate on the adjacent 15% pool, which is the primary route for IS users to encounter aspiration content.
 
-**Session Return Rate:** Percentage of users who return within 48 hours of a session where they completed the full loop. The most direct measure of whether the habit loop (quiz, recall schedule, progress update) is creating a reason to come back.
+---
 
-### Tier 3: Learning Metrics
+### Is the loop functioning?
 
-**Concept Score Delta:** Score after minus score before per concept per session. If consistently near zero, the quiz questions may be too easy or the EMA alpha (0.3) may be too conservative. Segment by difficulty level to check.
+**3. Quiz Completion Rate**
 
-**Recall Accuracy:** Correct recall questions divided by total recall questions. If low across the board, the spaced repetition intervals may be too long. If low for specific concepts, those concepts may need more in-session reinforcement or better recap coverage.
+Measures how often users complete the quiz when it is offered. Without quiz completion there is no knowledge state update, no recall is scheduled, and the session ends as a passive watch.
 
-**Recall Lift:** Recall score minus initial quiz score on the same concept. Positive means the user retained or improved. Negative means they forgot. This is the clearest signal that spaced repetition is working.
+`Quiz Completion Rate = quizzes completed / quizzes offered`
 
-**Concept Graduation Rate:** Sessions until a concept score crosses 0.6 for the first time. Lower is better. If very high for a specific concept, the concept may be too broad or the content covering it may not be effective.
+Segment by maturity. Low rates for AS New users may indicate the medium difficulty cap is still too aggressive. Low rates across all user types suggest a timing or relevance issue: the quiz appears at the wrong moment or feels disconnected from the video.
 
-### Tier 4: System Health
+---
 
-**Difficulty Calibration:** Percentage of quizzes where the difficulty band matched the user's score at the time. Target is 80% or above. Below that, check whether concept scores are updating correctly or whether the thresholds (0.2, 0.5) need adjustment.
+**4. Recall Response Rate**
 
-**Question Bank Coverage:** Percentage of (video_id, concept, difficulty) combinations with at least one generated question. Low coverage means sparse rotation and users seeing the same questions repeatedly. Track this especially for recall, where the pool is scoped to watched videos.
+Measures how often users complete a scheduled recall session. Recalls being scheduled does not mean they are being done. If response rate is low, spaced repetition is not functioning in practice.
 
-**Concept Extractor Consistency:** For videos covering the same topic, do concept profiles look similar? If two Career & Jobs videos about body language produce very different coverage scores, the extraction prompt needs refinement. Spot-check by sampling profiles for related videos.
+`Recall Response Rate = recalls completed / recalls scheduled`
 
-**Recall Queue Health:** Average queue depth per active user and percentage of recalls missed 3 or more times. A growing backlog of stale recalls means users are not returning or the daily cap (3-5) is too restrictive for heavy users.
+Cross-check with Retention Lift. If both are low, the loop is not pulling users back between sessions. If only recall response is low but retention is otherwise healthy, the issue is likely in how recalls are surfaced at session start rather than overall engagement.
+
+---
+
+**5. Session Return Rate**
+
+Measures whether completing a full loop produces a return visit within 48 hours. This is separate from Recall Response Rate, which only counts recall-specific returns.
+
+`Session Return Rate = sessions followed by a return within 48h / sessions where full loop was completed`
+
+Low return rate despite healthy quiz completion points to the post-quiz experience: the progress update, the recall schedule interval, or the next video recommendation.
+
+---
+
+**6. Recommendation Acceptance Rate**
+
+Measures how often the recommended video is watched. Low acceptance means the gap-based scoring is not surfacing content users want to watch next.
+
+`Acceptance Rate = recommended videos watched / recommendations shown`
+
+Decompose by pool when diagnosing: same-category 80%, adjacent 15%, random 5%. The adjacent pool drives IS-to-AS conversion. Low acceptance on that slice indicates either the adjacency map is misaligned or the IS user is not ready for aspiration content at that point. The random 5% is expected to run lower by design.
+
+---
+
+**7. Recall Accuracy**
+
+Measures how often users answer recall questions correctly. Recall tests retention across an interval, not immediate recall of what was just watched.
+
+`Recall Accuracy = correct recall answers / total recall answers attempted`
+
+Low accuracy across the board suggests intervals are too long. Low accuracy on specific concepts points to gaps in the recap coverage or questions misaligned with what the video actually taught.
+
+---
+
+**8. Recall Lift**
+
+Compares a user's recall score on a concept against their quiz score from the original session on the same video. Recall Accuracy captures current performance; Recall Lift shows whether spaced repetition is improving retention over time.
+
+`Recall Lift = recall score (concept) - quiz score (concept, same video, original session)`
+
+Positive lift means the user retained or improved. Negative lift means they performed worse at recall than right after watching. Consistently negative lift points to intervals that are too long or an in-session quiz that did not establish a strong enough baseline.
+
+---
+
+**9. Concept Score Delta**
+
+Measures how much a concept score moves in a single session. The EMA formula produces an expected delta of +0.1 to +0.3 per correct answer depending on the starting score. Consistently low deltas indicate the knowledge state is not updating with meaningful signal.
+
+`Score Delta = knowledge_state[concept] (after quiz) - knowledge_state[concept] (before quiz)`
+
+Near-zero deltas typically have one of three causes: questions are too easy so scores have little room to grow, the EMA alpha of 0.3 is too conservative for early sessions, or the concept coverage score in the video was too low to register signal.
+
+---
+
+### How they fit together
+
+Retention Lift is the outcome metric. The remaining eight explain why it is what it is.
+
+Low retention points to Session Return Rate and Recall Response Rate. If users complete the loop but do not return, the issue is downstream of the quiz: the progress update, the recall schedule, or the next video recommendation. If users are not completing the loop at all, Quiz Completion Rate is the upstream gate. Nothing runs without it.
+
+If the loop is running but retention is still low, Recall Accuracy and Recall Lift show whether learning is sticking. Recall Lift isolates whether the spaced repetition intervals are helping. If the knowledge state looks unreliable, Concept Score Delta shows whether scores are moving at all.
+
+IS-to-AS Conversion Rate is separate from the loop health metrics. It measures whether Saathi is growing the set of users who engage with the loop in the first place. Low conversion is diagnosed through Recommendation Acceptance Rate on the adjacent 15% pool, which is where IS users first encounter aspiration content.
 
 ---
 
@@ -487,13 +626,19 @@ Metrics are organized in four tiers, from what Seekho cares about most down to w
 
 **taxonomy.json:** 4 demo categories from Seekho's actual category list. Career & Jobs is fully detailed with 5 concepts: `body_language`, `voice_modulation`, `answering_structure`, `handling_nervousness`, `preparation`. The other 3 (English Speaking, Business, Share Market) are named but their concept breakdowns are placeholders. In production, every skill-learning category gets its own 4-5 concept mapping.
 
-**users.json:** Two profiles. Priya (AS, Warming Up, pre-loaded knowledge state with weak spots in `body_language` and `answering_structure`) and Rahul (IS, New, empty knowledge state). Together they show how Saathi adapts to fundamentally different users on the same video.
+**users.json:** Two user dicts. Each contains the full profile, knowledge state, and watch history in a single object (see Knowledge State Architecture).
+
+Priya: AS, Warming Up, 14 days on platform, 8 total videos watched. Her watch history includes at least 3 Career & Jobs videos, which is what produces her AS classification under the rolling window classifier (Step 2: depth signal). Her knowledge state has pre-loaded weak spots in `body_language` (0.3) and `answering_structure` (0.3), with current scores slightly above that from prior quiz sessions.
+
+Rahul: IS, New, 3 days on platform, fewer than 5 non-entertainment videos watched. Classified IS via the new-user default (Step 3). No quizzes completed, empty knowledge state.
+
+Together they demonstrate how the same video produces a different experience depending on who is watching.
 
 **videos.json:** 5 videos. 4 aspiration (Career & Jobs) and 1 utility (Sarkari Kaam). One transcript-backed video serves as the primary demo.
 
-**video_artifacts.json:** Pre-generated concept profiles, recap bullets (IS and AS versions per concept), populated from running the preprocessing pipeline on the demo transcript.
+**video_artifacts.json:** Pre-generated video dicts for all demo videos. Each dict contains the concept profile, recap bullets (IS and AS versions per concept), and questions (multiple per concept per difficulty), all produced from running the preprocessing pipeline on the demo transcript.
 
-**question_bank.json:** Pre-generated questions per (video_id, concept, difficulty, question_index), populated from the same preprocessing run.
+**recall_queue.json:** Pending recall entries for Priya. Since she is AS Warming Up and has completed quizzes, the Recall Scheduler has written entries for the concepts she was quizzed on. This file is used to demonstrate the session-start recall surfacing. Rahul has no recall entries since IS users do not get recalls scheduled.
 
 **transcripts/interview_confidence.txt:** Roughly 800 words covering all four Career & Jobs demo concepts. This is the input to the preprocessing pipeline.
 
@@ -505,18 +650,22 @@ Metrics are organized in four tiers, from what Seekho cares about most down to w
 
 Every recap, quiz, and recommendation is pointed at weak spots. This is right for learning velocity but will feel exhausting over time. Real learning systems mix challenge with consolidation. A better approach would occasionally serve easier questions on strong concepts and recommend content the user is likely to enjoy, not just content they need.
 
-**2. The IS and AS classifier can lag or be wrong.**
+**2. The concept taxonomy takes time to scale across categories.**
 
-The classifier infers user type purely from watch history. Someone who binges utility content during a bad week gets misclassified as IS and has the full loop suppressed. There is no self-correction until behavior shifts over multiple sessions. A short onboarding signal ("I'm trying to improve my English") would be far more reliable, but that flow does not exist yet.
+Each skill-learning category needs a concept breakdown authored and reviewed before the pipeline can run. The process is LLM-assisted (the LLM proposes the breakdown) but human review is required before it goes live. Sub-skills also collapse into a single score: body language, for example, folds together eye contact, posture, and gestures. For the prototype with 4 categories this is fine. Across Seekho's full catalog of 40 categories, the review bottleneck becomes the constraint.
 
-**3. The concept taxonomy requires manual authoring per category.**
+**3. Recall questions are scoped to watched videos, not the concept itself.**
 
-Seekho has around 40 categories. Each skill-learning category needs a manually authored concept breakdown, and sub-skills collapse into a single score. Body language, for example, folds together eye contact, posture, and gestures. This is fine for the prototype but becomes a bottleneck at scale. A semi-automated approach where the LLM proposes concept breakdowns and a human reviews them would reduce the effort significantly.
+Questions are generated from specific video transcripts. If a user has only watched one video covering a concept, the recall pool is limited to that video's questions. Even with multiple questions per difficulty level, a small pool means repetition. The pool only grows as the user watches more videos that cover the concept. Concept cards (short authored descriptions per concept, independent of any video) would solve this by providing a stable generation input for recall questions regardless of watch history.
 
-**4. Recall questions are scoped to watched videos, not the concept itself.**
+**4. Goal completion is out of scope for this prototype.**
 
-Questions are generated from specific video transcripts. If a user has only watched one video covering a concept, there is exactly one question per difficulty level available for recall, and they see the same question every time until they watch more content. Concept cards (short authored descriptions per concept, independent of any video) would solve this by providing a stable generation input for recall questions regardless of watch history.
+An AS user who achieves their goal has no way to signal it. The system will keep recommending the same category indefinitely. This is a known gap. The full solution is skill trees, described in [03-ai-vision.md](03-ai-vision.md). That design is not part of this prototype.
 
-**5. There is no notion of goal completion.**
+**5. There is no feedback loop from user behavior back to the content layer.**
 
-An AS user who achieves their goal (got the job, feels confident in English) has no way to signal it. The system has no concept of graduation and will keep recommending the same category indefinitely. Skill trees (see 03-ai-vision.md) solve this structurally. Until then, an explicit user signal or behavioral inference (high scores across all concepts plus declining engagement) would serve as a stopgap.
+All preprocessing artifacts (concept coverage scores, question difficulty bands, content type labels, category assignments) are set at ingestion and never updated. They reflect editorial judgment at the time a video is processed, not what actually happens when users engage with it.
+
+In practice these artifacts drift. A video tagged as having 0.9 coverage of `body_language` may consistently produce low quiz scores on that concept, which means the coverage score is wrong. A question labeled easy may have a 30% success rate, which means it is medium or hard. A video labeled utility may drive consistent aspiration behavior, suggesting the content type label is wrong.
+
+The signals to correct all of this already exist: quiz accuracy per concept per video, recall performance, watch completion rates, and recommendation acceptance. What is missing is a pipeline that aggregates those signals and feeds them back into the concept profiles, difficulty calibrations, and content metadata. This is the most important missing piece for a production system, because every part of the pipeline relies on the accuracy of these artifacts.

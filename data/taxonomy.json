@@ -1,98 +1,108 @@
 {
-  "interview_skills": {
-    "display_name": "Interview Skills",
-    "concepts": {
-      "body_language": {
-        "display_name": "Body Language",
-        "description": "Physical presence, posture, eye contact, and non-verbal signals during an interview"
-      },
-      "voice_modulation": {
-        "display_name": "Voice Modulation",
-        "description": "Tone, pace, clarity, and confidence in verbal delivery"
-      },
-      "answering_structure": {
-        "display_name": "Answering Structure",
-        "description": "Organising answers with clear beginning, middle, and end (e.g. STAR method)"
-      },
-      "handling_nervousness": {
-        "display_name": "Handling Nervousness",
-        "description": "Techniques to manage anxiety and channel it into positive energy during interviews"
-      },
-      "preparation": {
-        "display_name": "Interview Preparation",
-        "description": "Research, practice, and readiness strategies before the interview"
+  "categories": {
+    "Career & Jobs": {
+      "display_name": "Career & Jobs",
+      "content_type": "aspiration",
+      "concepts": {
+        "body_language": {
+          "display_name": "Body Language",
+          "description": "Physical presence, posture, eye contact, and non-verbal signals during an interview"
+        },
+        "voice_modulation": {
+          "display_name": "Voice Modulation",
+          "description": "Tone, pace, clarity, and confidence in verbal delivery"
+        },
+        "answering_structure": {
+          "display_name": "Answering Structure",
+          "description": "Organising answers with a clear beginning, middle, and end (e.g. what you did, how you did it, what happened)"
+        },
+        "handling_nervousness": {
+          "display_name": "Handling Nervousness",
+          "description": "Techniques to manage anxiety and channel it productively during interviews"
+        },
+        "preparation": {
+          "display_name": "Preparation",
+          "description": "Research, practice, and readiness strategies before the interview"
+        }
       }
+    },
+    "English Speaking": {
+      "display_name": "English Speaking",
+      "content_type": "aspiration",
+      "concepts": {
+        "vocabulary": {
+          "display_name": "Vocabulary",
+          "description": "placeholder"
+        },
+        "pronunciation": {
+          "display_name": "Pronunciation",
+          "description": "placeholder"
+        },
+        "grammar": {
+          "display_name": "Grammar",
+          "description": "placeholder"
+        },
+        "fluency": {
+          "display_name": "Fluency",
+          "description": "placeholder"
+        }
+      }
+    },
+    "Business": {
+      "display_name": "Business",
+      "content_type": "aspiration",
+      "concepts": {
+        "customer_acquisition": {
+          "display_name": "Customer Acquisition",
+          "description": "placeholder"
+        },
+        "pricing": {
+          "display_name": "Pricing",
+          "description": "placeholder"
+        },
+        "operations": {
+          "display_name": "Operations",
+          "description": "placeholder"
+        },
+        "financial_management": {
+          "display_name": "Financial Management",
+          "description": "placeholder"
+        }
+      }
+    },
+    "Share Market": {
+      "display_name": "Share Market",
+      "content_type": "aspiration",
+      "concepts": {
+        "fundamentals": {
+          "display_name": "Fundamentals",
+          "description": "placeholder"
+        },
+        "risk_management": {
+          "display_name": "Risk Management",
+          "description": "placeholder"
+        },
+        "reading_charts": {
+          "display_name": "Reading Charts",
+          "description": "placeholder"
+        },
+        "portfolio_building": {
+          "display_name": "Portfolio Building",
+          "description": "placeholder"
+        }
+      }
+    },
+    "Sarkari Kaam": {
+      "display_name": "Sarkari Kaam",
+      "content_type": "utility",
+      "concepts": {}
     }
   },
-  "english_speaking": {
-    "display_name": "English Speaking",
-    "concepts": {
-      "grammar": {
-        "display_name": "Grammar",
-        "description": "Correct sentence structure, tense usage, and grammatical accuracy"
-      },
-      "vocabulary": {
-        "display_name": "Vocabulary",
-        "description": "Range and appropriateness of words used in spoken English"
-      },
-      "pronunciation": {
-        "display_name": "Pronunciation",
-        "description": "Clarity and accuracy of spoken sounds and word stress"
-      },
-      "fluency": {
-        "display_name": "Fluency",
-        "description": "Smoothness and naturalness of speech without excessive pausing or hesitation"
-      },
-      "listening_comprehension": {
-        "display_name": "Listening Comprehension",
-        "description": "Understanding spoken English in real conversations and contexts"
-      }
-    }
-  },
-  "business_growth": {
-    "display_name": "Business Growth",
-    "concepts": {
-      "customer_acquisition": {
-        "display_name": "Customer Acquisition",
-        "description": "Strategies to find and attract new customers to a business"
-      },
-      "pricing": {
-        "display_name": "Pricing Strategy",
-        "description": "How to price products or services for profitability and market fit"
-      },
-      "operations": {
-        "display_name": "Business Operations",
-        "description": "Managing day-to-day business processes efficiently"
-      },
-      "financial_management": {
-        "display_name": "Financial Management",
-        "description": "Tracking income, expenses, and making sound financial decisions"
-      },
-      "marketing": {
-        "display_name": "Marketing",
-        "description": "Promoting a business or product to reach and engage the right audience"
-      }
-    }
-  },
-  "digital_literacy": {
-    "display_name": "Digital Literacy",
-    "concepts": {
-      "device_usage": {
-        "display_name": "Device Usage",
-        "description": "Basic smartphone and computer usage skills"
-      },
-      "internet_safety": {
-        "display_name": "Internet Safety",
-        "description": "Staying safe online, avoiding scams, and protecting personal data"
-      },
-      "app_navigation": {
-        "display_name": "App Navigation",
-        "description": "Using mobile apps effectively for common tasks"
-      },
-      "digital_payments": {
-        "display_name": "Digital Payments",
-        "description": "Using UPI, mobile wallets, and online banking safely"
-      }
-    }
+  "adjacency": {
+    "Career & Jobs": ["English Speaking"],
+    "English Speaking": ["Career & Jobs", "Business"],
+    "Business": ["Share Market", "English Speaking"],
+    "Share Market": ["Business"],
+    "Sarkari Kaam": []
   }
 }
