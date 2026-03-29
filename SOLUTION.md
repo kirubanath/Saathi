@@ -34,7 +34,7 @@ Seekho currently has Coach, which appears to be stateless, generic, and reactive
 
 **What drives retention:** I believe Tier 2/3 users return for the feeling of moving forward, not leaderboards or points. They need to see themselves as different from their past self. They're not buying videos. They're buying the feeling of growth.
 
-**How Saathi adapts:** Content type is the first gate: entertainment gets no loop, utility gets a recommendation only, aspiration activates the learning loop. Within aspiration content, the system classifies each user on three dimensions (type, maturity, session context) to determine the intensity. Same video, different user, completely different experience.
+**How Saathi adapts:** Content type is the first gate: entertainment gets no loop, utility gets a recommendation only, aspiration activates the learning loop. Within aspiration content, the system classifies each user on two dimensions (type, maturity) to determine the intensity. Same video, different user, completely different experience. When the user opens the app, a separate session-start check runs first: if recalls are due they surface before anything else, and if the user completed a series last session they see a milestone. Neither of these is part of the per-video pipeline.
 
 **The emotional north star:** Every touchpoint should answer one question from the user's perspective: am I moving forward?
 
@@ -56,25 +56,33 @@ Design decisions: classify before acting, target weak concepts not generic summa
 
 *Full detail: [documentation/05-solution-overview.md](documentation/05-solution-overview.md)*
 
-Nine components:
+The system runs in three phases. All LLM work happens in preprocessing. The session start and per-video pipeline are pure selection and scoring logic, fast with no LLM calls.
 
-**1. User State Classifier:** Three-dimensional classification (type x maturity x session context). Runs first. Determines the loop behavior: IS users get a soft nudge, Converting users get a shorter loop, AS users get the full experience. Entertainment categories get no loop at all.
+**Preprocessing (once per video, at ingestion):**
 
-**2. Concept Extractor:** Maps transcripts to a fixed concept set per Seekho category (4-5 concepts each). Only skill-learning categories get concept mappings. Entertainment categories like Crime or Cricket are excluded. Concepts below 0.2 coverage excluded. Profiles are deterministic. Prototype details Career & Jobs; other categories follow the same pattern.
+**1. Concept Extractor:** Maps the video transcript to the fixed concept taxonomy for its category (4-5 concepts each). Produces a concept profile with coverage scores per concept. Concepts below 0.2 coverage are excluded. Only skill-learning categories get concept mappings.
 
-**3. Recap Engine:** Up to 3-bullet recap for AS users, 2-bullet soft recap for IS/Converting. Weighted by (video coverage x user gap). LLM-generated from transcript, guided by targeted concepts. Teaches before the quiz tests.
+**2. Recap Bullet Generator:** For each concept in the profile, generates two recap bullets: one IS-flavored (low pressure, immediate usefulness) and one AS-flavored (richer, frames the concept as part of ongoing skill development). Both stored per concept. At interaction time, the system selects which version to show based on user type.
 
-**4. Quiz Engine:** Lazy-loaded question bank keyed by (video_id, concept, difficulty, question_index). Top 3 concepts by (coverage x gap), 1 question each. LLM generates once, reuses forever.
+**3. Question Generator:** For each concept, generates questions at easy, medium, and hard difficulty. Multiple questions per level to support rotation. Stored in the question bank, used for both the in-session quiz and future recall.
 
-**5. Response Evaluator:** Deterministic. Correct index check. No LLM. Skipped questions scored as 0. Skipped quiz means no recall scheduled.
+**Per-Video Pipeline (fires at 80% watch completion):**
 
-**6. Knowledge State Updater:** EMA-based per-concept scores. Quiz alpha = 0.3, recall alpha = 0.15. Passive watch capped at 1.0. Asymmetric: success rewarded more than failure penalized. No passive decay.
+**4. User State Classifier:** Reads profile and watch history, outputs content type, user type, and maturity. Content type is the first gate: entertainment and utility get a recommendation only. Aspiration activates the full pipeline. User type (IS, Converting, AS) and maturity (New, Warming Up, Established) determine intensity within aspiration content.
 
-**7. Progress Update:** Shows the user what changed after quiz. "Body Language: 30% -> 51%." Makes the emotional north star tangible. Shifts to encouragement if scores dropped.
+**5. Recap Engine:** Selects pre-generated bullets ranked by coverage x user gap. IS users see the top 2 IS-flavored bullets. AS and Converting users see the top 2 or 3 AS-flavored bullets. No LLM at this step.
 
-**8. Recommendation Engine:** Outputs a single video with an explanation of why. Gap-weighted relevance scoring with softmax sampling. Temperature varies by user state. 80/15/5 same-category/adjacent/discovery split. 0.5 neutral prior for unseen categories.
+**6. Quiz Engine:** Selects questions from the pre-generated bank for the same concepts the recap covered. One question per concept. Difficulty set by the user's current score. Capped at medium for AS New and Converting. No LLM at this step.
 
-**9. Recall Scheduler:** Per-user recall queue with priority ranking. Base intervals by score. Correct doubles interval, wrong halves it (min 12 hours). Daily cap of 3-5 questions. Questions drawn from quiz bank scoped to watched videos.
+**7. Response Evaluator:** Deterministic. Correct index check. No LLM. Skipped questions scored as 0. Skipped quiz means no recall scheduled.
+
+**8. Knowledge State Updater:** EMA-based per-concept scores. Quiz alpha = 0.3, recall alpha = 0.15. Passive watch bump capped at 1.0. No passive decay.
+
+**9. Progress Update:** Shows the user what changed after the quiz. "Body Language: 30% to 51%." Shifts to encouragement if scores dropped. Shown for AS and Converting users only.
+
+**10. Recommendation Engine:** Outputs a single video with an explanation of why. Gap-weighted relevance scoring with softmax sampling. Temperature varies by user state. 80/15/5 same-category/adjacent/discovery pool split. 0.5 neutral prior for unseen categories.
+
+**11. Recall Scheduler:** Writes recall entries for concepts that were quizzed. Only for AS Warming Up and Established users. Base intervals by score, correct doubles, wrong halves (min 12 hours). At session start, top 3-5 due recalls surface first by priority (urgency x importance). Questions drawn from the pre-generated bank, scoped to watched videos.
 
 ---
 
@@ -84,7 +92,9 @@ Nine components:
 
 Streamlit app, two panels. Left shows what the learner sees. Right shows what the system is thinking. Two users: Priya (AS, weak spots pre-loaded) and Rahul (IS, empty state). Same video, completely different experience.
 
-Four journeys: (1) Priya's full loop through all 9 components. (2) Rahul on the same video, classifier suppresses the loop, soft recap and warm nudge only. (3) Priya follows the recommendation and watches video 2, everything adapts because her knowledge state changed. (4) Priya returns the next day, recalls surface first, spaced repetition in action. Journey 3 is the key one. It proves the system gets smarter with each interaction, not just that it works once.
+Step 0 runs first: the preprocessing pipeline runs on the demo transcript, generating concept profiles, IS and AS recap bullets per concept, and questions per concept and difficulty. This is where the only LLM calls happen. The right panel shows the LLM being called, the outputs, and the stored artifacts. The four journeys that follow make no LLM calls.
+
+Four journeys: (1) Priya's full loop, showing how the pipeline selects and scores from pre-generated artifacts. (2) Rahul on the same video, classifier suppresses the loop, IS bullets and warm nudge only. (3) Priya follows the recommendation and watches video 2, everything adapts because her knowledge state changed. (4) Priya returns the next day, recalls surface first, spaced repetition in action. Journey 3 is the key one. It proves the system gets smarter with each interaction, not just that it works once.
 
 ---
 

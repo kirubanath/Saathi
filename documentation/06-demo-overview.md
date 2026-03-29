@@ -22,6 +22,20 @@ The evaluator sees both the outcome and the reasoning behind it at the same time
 
 **Rahul (Information Seeker):** New, 3 days, 2 utility videos watched in Sarkari Kaam. Empty knowledge state.
 
+## Step 0: Video Preprocessing
+
+**What it shows:** Where all LLM work happens. Every artifact the four journeys use is generated here. The journeys themselves make no LLM calls.
+
+**Flow:**
+
+1. Transcript for the demo video loads. Right panel shows the raw text.
+2. Concept extractor maps the transcript to the Career & Jobs concept taxonomy. Right panel shows the LLM call, the prompt, and the output concept profile: {body_language: 0.9, voice_modulation: 0.8, answering_structure: 0.6, handling_nervousness: 0.5}.
+3. Recap bullet generator runs for each concept above the 0.2 coverage threshold. For each concept, two bullets are generated: IS-flavored and AS-flavored. Right panel shows both versions side by side.
+4. Question generator runs per concept per difficulty level (easy, medium, hard). Right panel shows sample questions across concepts and difficulty levels.
+5. All artifacts are stored. Right panel confirms what was written: concept profile, recap bullets keyed by concept and user type, questions keyed by concept and difficulty.
+
+**What the evaluator should see:** The LLM is called here, not during user interactions. Every personalized response in the four journeys is the system selecting from what was generated in this step. The cost of running Saathi at interaction time is scoring and selection logic, not LLM inference.
+
 ## Four Journeys
 
 Each journey runs independently. The evaluator selects a journey from the demo, watches it play out, and sees exactly what the system is doing at every step.
@@ -38,8 +52,8 @@ Each journey runs independently. The evaluator selects a journey from the demo, 
 
 1. Priya's profile loads. Right panel shows her user type (AS), maturity (Warming Up), and current knowledge state with weak spots highlighted.
 2. Content type identified as aspiration. Classifier determines: AS + aspiration = full loop.
-3. Concept extractor maps the video transcript to Career & Jobs concepts. Right panel shows the concept profile: {body_language: 0.9, voice_modulation: 0.8, answering_structure: 0.6, handling_nervousness: 0.5}.
-4. Recap engine computes targeting scores (coverage x gap). Right panel shows why body_language and answering_structure are prioritized (high coverage, high gap). Left panel shows a 3-bullet personalized recap.
+3. Pre-generated concept profile for this video loads. Right panel shows: {body_language: 0.9, voice_modulation: 0.8, answering_structure: 0.6, handling_nervousness: 0.5}.
+4. Recap engine ranks concepts by coverage x gap and selects the top 3 AS-flavored pre-generated bullets. Right panel shows why body_language and answering_structure are prioritized (high coverage, high gap). Left panel shows the 3 selected bullets.
 5. Quiz engine serves 3 questions, one per targeted concept, at difficulty levels matching Priya's scores. Right panel shows the difficulty selection logic.
 6. Priya answers. Response evaluator scores each question. Right panel shows results per concept.
 7. Knowledge state updater applies EMA. Right panel shows before/after scores. Example: body_language 0.3 -> 0.51 (correct), answering_structure 0.3 -> 0.21 (wrong).
@@ -61,8 +75,8 @@ Each journey runs independently. The evaluator selects a journey from the demo, 
 
 1. Rahul's profile loads. Right panel shows his user type (IS), maturity (New), and empty knowledge state.
 2. Content type identified as aspiration. Classifier determines: IS + aspiration = soft recap only, no quiz.
-3. Concept extractor runs the same way and produces the same concept profile. Right panel shows this is identical to Priya's.
-4. Recap engine generates a soft 2-bullet recap (not 3). Right panel shows why: IS user, shorter format, no quiz to follow.
+3. The same pre-generated concept profile loads. Right panel shows it is identical to Priya's.
+4. Recap engine selects the top 2 IS-flavored pre-generated bullets. Right panel shows why: IS user gets the softer-toned version, 2 bullets instead of 3, no quiz follows.
 5. No quiz. No knowledge state update from quiz. No recall scheduled. Right panel explicitly shows these steps being skipped and why.
 6. Recommendation engine runs. Right panel shows the scoring. Left panel shows the recommendation with a warm nudge: "Liked this? Here's where this topic goes."
 
@@ -80,7 +94,7 @@ Each journey runs independently. The evaluator selects a journey from the demo, 
 
 1. Priya's updated knowledge state loads (post-Journey 1). Right panel shows her scores have shifted: body_language is now 0.51, answering_structure dropped to 0.21.
 2. Video 2 is a different Career & Jobs video, heavier on answering_structure. Content type: aspiration. Classifier: AS + aspiration = full loop.
-3. Concept extractor produces a different concept profile for this video. Right panel shows the new profile.
+3. Pre-generated concept profile for video 2 loads. Right panel shows the new profile, heavier on answering_structure than video 1.
 4. Recap engine targets differently now. Because answering_structure dropped to 0.21 (high gap), it dominates the recap. Right panel shows the changed targeting scores compared to Journey 1.
 5. Quiz engine serves questions. answering_structure gets an easy question this time (score below 0.2), not medium like in Journey 1. Right panel shows the difficulty shift.
 6. Priya answers correctly this time. Knowledge state updates: answering_structure 0.21 -> 0.45.

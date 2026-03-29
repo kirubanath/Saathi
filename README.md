@@ -25,8 +25,8 @@ All documentation lives in [`documentation/`](documentation/). Start with the in
 | 02  | [Original Problem](documentation/02-original-problem.md)   | The assignment as given, plus how I interpreted it           |
 | 03  | [AI Vision](documentation/03-ai-vision.md)                 | My hypotheses, the opportunity, and what Saathi is as the answer |
 | 04  | [Scoped Problem](documentation/04-scoped-problem.md)       | What the prototype builds: inputs, constraints, scope        |
-| 05  | [Solution Overview](documentation/05-solution-overview.md) | Nine components, formulas, knowledge state, metrics          |
-| 06  | [Demo Overview](documentation/06-demo-overview.md)         | Demo format, users, journeys, and flow                       |
+| 05  | [Solution Overview](documentation/05-solution-overview.md) | Three phases: preprocessing, session start, per-video pipeline. Components, formulas, data structures, metrics. |
+| 06  | [Demo Overview](documentation/06-demo-overview.md)         | Demo format, users, preprocessing step, and four journeys    |
 | 07  | [Architecture](documentation/07-architecture.md)           | Component boundaries and data flow                           |
 | 08  | [Design Document](documentation/08-design-document.md)     | Implementation plan and build order                          |
 

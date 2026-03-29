@@ -210,10 +210,10 @@ Maintains per-user, per-concept mastery scores from 0 to 1 using Exponential Mov
 **Watch (passive):**
 
 ```
-new_score = min(1.0, score + 0.05 x completion_rate)
+new_score = min(0.8, score + 0.1 x completion_rate x concept_score)
 ```
 
-Watching is a weak signal. Small bump, capped at 1.0.
+Watching is a weak signal. So it will only do a smaller bump, capped at 0.8 per concept. We cannot assume full mastery of a concept just by watching the relevant video.
 
 **Quiz (active learning):**
 
@@ -271,7 +271,7 @@ This map is authored editorially and updated as the category set evolves. For th
 
 Gap vector: `gap[c] = 1 - assumed_score[c]`
 
-For categories the user has not engaged with, `assumed_score[c] = 0.5` (neutral prior). This is a local heuristic used only by the recommendation engine. The stored knowledge state is not changed. Without this, every concept in an unseen adjacent category would have gap = 1.0, making all adjacent videos score identically and preventing any ranking. Once the user quizzes in that category, the real score takes over.
+For categories the user has not engaged with, `assumed_score[c] = 0.5` (neutral prior). This is a local heuristic used only by the recommendation engine. The stored knowledge state is not changed. Without this, every concept in an unseen adjacent category would have gap = 1.0, making all adjacent videos score very high. So we start with a reasonable mid point. Once the user quizzes in that category, the real score takes over.
 
 Relevance score: `relevance = sum(concept_profile[c] x gap[c])`
 
@@ -282,7 +282,7 @@ final_score = relevance x (1 - quiz_score_at_watch) x time_decay(days)
 time_decay(d) = 1 - exp(-d/30)
 ```
 
-A video the user aced gets heavily suppressed. A video the user struggled with a month ago and still hasn't mastered scores high. If the quiz was skipped, `quiz_score_at_watch = 0.5` (moderate suppression). For new videos, `final_score = relevance` with no penalty.
+A video the user did well on gets heavily suppressed. A video the user struggled with a month ago and still hasn't mastered scores high. If the quiz was skipped, `quiz_score_at_watch = 0.5` (moderate suppression). For new videos, `final_score = relevance` with no penalty.
 
 **Sampling:**
 
@@ -319,7 +319,7 @@ Writes a recall entry for each concept that was quizzed. Only runs for AS Warmin
 
 Correct recall doubles the interval. Wrong recall halves it, minimum 12 hours.
 
-**Surfacing** happens at session start (described above). All due entries are ranked by `priority = urgency x importance`, where `urgency = days_overdue + 1` and `importance = 1 - current_concept_score`. The top 3-5 are shown. The rest carry over to the next session.
+**Surfacing** At session start, items are surfaced by first filtering for eligibility (time since last recall ≥ interval), then ranking eligible items by `priority = urgency × importance`, where `urgency = days_overdue + 1` and `importance = 1 − current_concept_score`. The top 3–5 items are shown, and the rest carry over to the next session.
 
 **Missed recalls** are not penalized. The user did not fail the recall, they were simply not present. The entry reschedules to the next session at the same interval. After 3 misses, the interval is halved so the concept surfaces sooner.
 
