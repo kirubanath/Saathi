@@ -153,7 +153,7 @@ Some categories could go either way. Finance could be utility (check this one th
 
 The IS path is deliberately low-pressure. Rahul watches a Sarkari Kaam video about linking Aadhaar, gets his answer, and Saathi says: "Got it. Here's another one people found useful." No quiz, no score. If he then watches an aspiration video, Saathi shows two IS-toned bullets and a gentle recommendation. The goal is not to scare away a user who is still deciding whether this platform is for them.
 
-Demo users: Priya (AS, Warming Up, 14 days, pre-loaded weak spots in `body_language` and `answering_structure` at 0.3) and Rahul (IS, New, 3 days, empty knowledge state).
+Demo users: Priya (AS, Warming Up, 14 days, pre-loaded weak spots in `body_language` at 0.3 and `answering_structure` at 0.25) and Rahul (IS, New, 3 days, empty knowledge state).
 
 ---
 
@@ -628,9 +628,9 @@ IS-to-AS Conversion Rate is separate from the loop health metrics. It measures w
 
 **users.json:** Two user dicts. Each contains the full profile, knowledge state, and watch history in a single object (see Knowledge State Architecture).
 
-Priya: AS, Warming Up, 14 days on platform, 8 total videos watched. Her watch history includes at least 3 Career & Jobs videos, which is what produces her AS classification under the rolling window classifier (Step 2: depth signal). Her knowledge state has pre-loaded weak spots in `body_language` (0.3) and `answering_structure` (0.3), with current scores slightly above that from prior quiz sessions.
+Priya: AS, Warming Up, 14 days on platform, 8 total videos watched. Her watch history includes at least 3 Career & Jobs videos, which is what produces her AS classification under the rolling window classifier (Step 2: depth signal). Her knowledge state has pre-loaded weak spots in `body_language` (0.3) and `answering_structure` (0.25), with current scores slightly above that from prior quiz sessions.
 
-Rahul: IS, New, 3 days on platform, fewer than 5 non-entertainment videos watched. Classified IS via the new-user default (Step 3). No quizzes completed, empty knowledge state.
+Rahul: IS, New, 3 days on platform, 2 aspiration videos watched (1 Career & Jobs, 1 Business), no concentration in any single category. Classified IS via the new-user default (Step 3): fewer than 5 non-entertainment videos total. No quizzes completed, empty knowledge state.
 
 Together they demonstrate how the same video produces a different experience depending on who is watching.
 
