@@ -294,4 +294,4 @@ The full Saathi vision includes real-time conversation between users and an AI. 
 
 ---
 
-*Next: [Demo Overview](07-demo-overview.md)*
+*← [Solution Overview](05-solution-overview.md)* | *[Demo Overview →](07-demo-overview.md)*

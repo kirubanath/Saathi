@@ -128,4 +128,4 @@ This prototype focuses on Proactive Mode. The proactive loop is the engine. It p
 
 ---
 
-*Next: [Scoped Problem](04-scoped-problem.md)*
+*← [Original Problem](02-original-problem.md)* | *[Scoped Problem →](04-scoped-problem.md)*

@@ -24,4 +24,4 @@ Start with SOLUTION.md in the project root for a concise summary of the full pro
 
 ---
 
-*Next: [Background](01-background.md)*
+*[Background →](01-background.md)*

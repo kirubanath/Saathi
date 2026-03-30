@@ -20,4 +20,4 @@ That's the gap the assignment is asking me to address.
 
 ---
 
-*Next: [Original Problem](02-original-problem.md)*
+*← [Index](00-index.md)* | *[Original Problem →](02-original-problem.md)*

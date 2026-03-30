@@ -718,4 +718,4 @@ For known limitations and design tradeoffs, see [08-design-decisions.md](08-desi
 
 ---
 
-*Next: [Architecture](06-architecture.md)*
+*← [Scoped Problem](04-scoped-problem.md)* | *[Architecture →](06-architecture.md)*

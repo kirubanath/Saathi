@@ -210,4 +210,4 @@ The intent is that every prototype-to-production swap is one line in a config fi
 
 ---
 
-*Back to: [README](../README.md)*
+*← [Demo Overview](07-demo-overview.md)* | *[README →](../README.md)*

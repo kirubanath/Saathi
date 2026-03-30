@@ -132,4 +132,4 @@ Each journey runs independently. The evaluator selects a journey from the demo, 
 
 ---
 
-*Next: [Design Decisions](08-design-decisions.md)*
+*← [Architecture](06-architecture.md)* | *[Design Decisions →](08-design-decisions.md)*

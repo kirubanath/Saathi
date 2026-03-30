@@ -45,4 +45,4 @@ That's how I arrived at Saathi. It's my interpretation of what "AI revision coac
 
 ---
 
-*Next: [AI Vision](03-ai-vision.md)*
+*← [Background](01-background.md)* | *[AI Vision →](03-ai-vision.md)*

@@ -52,4 +52,4 @@ The prototype should feel like this is a learning system that knows who it is ta
 
 ---
 
-*Next: [Solution Overview](05-solution-overview.md)*
+*← [AI Vision](03-ai-vision.md)* | *[Solution Overview →](05-solution-overview.md)*
