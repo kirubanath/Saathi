@@ -645,21 +645,19 @@ IS-to-AS Conversion Rate is separate from the loop health metrics. It measures w
 
 **taxonomy.json:** 4 demo categories from Seekho's actual category list. Career & Jobs is fully detailed with 5 concepts: `body_language`, `voice_modulation`, `answering_structure`, `handling_nervousness`, `preparation`. The other 3 (English Speaking, Business, Share Market) are named but their concept breakdowns are placeholders. In production, every skill-learning category gets its own 4-5 concept mapping.
 
-**users.json:** Two user dicts. Each contains the full profile, knowledge state, and watch history in a single object (see Knowledge State Architecture).
+**User records (SQLite):** Two users seeded into the database before the demo. Each record contains the full profile, knowledge state, watch history, and recall queue in a single user record (see Knowledge State Architecture).
 
-Priya: AS, Warming Up, 14 days on platform, 8 total videos watched. Her watch history includes at least 3 Career & Jobs videos, which is what produces her AS classification under the rolling window classifier (Step 2: depth signal). Her knowledge state has pre-loaded weak spots in `body_language` (0.3) and `answering_structure` (0.25), with current scores slightly above that from prior quiz sessions.
+Priya: AS, Warming Up, 14 days on platform, 8 total videos watched. Her watch history includes at least 3 Career & Jobs videos, which is what produces her AS classification under the rolling window classifier (Step 2: depth signal). Her knowledge state has pre-loaded weak spots in `body_language` (0.3) and `answering_structure` (0.25), with current scores slightly above that from prior quiz sessions. Her record includes a pre-populated recall queue with pending entries for the concepts she was quizzed on.
 
-Rahul: IS, New, 3 days on platform, 2 aspiration videos watched (1 Career & Jobs, 1 Business), no concentration in any single category. Classified IS via the new-user default (Step 3): fewer than 5 non-entertainment videos total. No quizzes completed, empty knowledge state.
+Rahul: IS, New, 3 days on platform, 2 aspiration videos watched (1 Career & Jobs, 1 Business), no concentration in any single category. Classified IS via the new-user default (Step 3): fewer than 5 non-entertainment videos total. No quizzes completed, empty knowledge state, no recall entries.
 
 Together they demonstrate how the same video produces a different experience depending on who is watching.
 
 **videos.json:** 5 videos. 4 aspiration (Career & Jobs) and 1 utility (Sarkari Kaam). One transcript-backed video serves as the primary demo.
 
-**video_artifacts.json:** Pre-generated video dicts for all demo videos. Each dict contains the concept profile, recap bullets (IS and AS versions per concept), and questions (multiple per concept per difficulty), all produced from running the preprocessing pipeline on the demo transcript.
+**Video artifacts (MinIO):** Pre-generated video artifacts loaded into MinIO before the demo. Each artifact contains the concept profile, recap bullets (IS and AS versions per concept), and questions (multiple per concept per difficulty), all produced by running the preprocessing worker on the demo transcript. The preprocessing worker writes directly to MinIO. At interaction time, FastAPI reads artifacts from MinIO.
 
-Priya's user record includes a pre-populated `recall_queue` with pending entries for the concepts she was quizzed on. Since she is AS Warming Up and has completed quizzes, the Recall Scheduler has written entries into her record. These are used to demonstrate the session-start recall surfacing. Rahul has no recall entries since IS users do not get recalls scheduled.
-
-**transcripts/interview_confidence.txt:** Roughly 800 words covering all four Career & Jobs demo concepts. This is the input to the preprocessing pipeline.
+**transcripts/interview_confidence.txt:** Roughly 800 words covering all four Career & Jobs demo concepts. This is the input to the preprocessing worker.
 
 ---
 

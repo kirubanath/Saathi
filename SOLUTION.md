@@ -106,7 +106,21 @@ Four journeys: (1) Priya's full loop, showing how the pipeline selects and score
 
 *Full detail: [documentation/07-architecture.md](documentation/07-architecture.md)*
 
-*To be completed.*
+The system has three distinct phases, each with its own diagram in the architecture doc.
+
+**Content Ingestion (offline, async):** A video upload triggers a job on a queue. A preprocessing worker picks it up, calls the LLM layer, and writes all artifacts to object storage. This is the only place LLM calls happen. The job queue decouples ingestion from user interactions entirely.
+
+**Per-Video Learning Loop (at 80% watch completion):** The user event hits a load balancer, routes to a stateless FastAPI instance, and runs the full learning engine: User State Classifier, Recap Engine, Quiz Engine, Response Evaluator, Knowledge State Updater, Progress Update, Recommendation Engine, and Recall Scheduler. The learning engine reads video artifacts from object storage and reads and writes user state to the user database. No LLM calls.
+
+**Session Start:** The user opens the app, the request hits the same API layer, and the session start flow runs: surface pending recalls, evaluate responses, update knowledge state, and recalculate recall intervals. All reads and writes go to the user database.
+
+**Prototype stack:** Streamlit calls FastAPI over HTTP. FastAPI owns all pipeline logic and data access. User state lives in SQLite. Video artifacts live in MinIO, which runs locally and implements the same API as any production object store.
+
+**Production stack:** Same FastAPI backend, hosted behind a load balancer. SQLite replaced by a relational database. MinIO replaced by production object storage. Preprocessing replaced by an async worker triggered via job queue. Every swap is a config change, not a code change.
+
+**LLM layer:** A single `LLMClient` class routes to the right provider wrapper based on config. Prototype uses Anthropic. Production uses Gemini. The pipeline never references a provider directly.
+
+**Why this scales:** The interaction path has no LLM calls. FastAPI instances are stateless and scale horizontally. Rate limits and inference latency from the LLM provider only affect the offline ingestion pipeline, not users.
 
 ---
 

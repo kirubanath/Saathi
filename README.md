@@ -27,7 +27,7 @@ All documentation lives in [`documentation/`](documentation/). Start with the in
 | 04  | [Scoped Problem](documentation/04-scoped-problem.md)       | What the prototype builds: inputs, constraints, scope        |
 | 05  | [Solution Overview](documentation/05-solution-overview.md) | Three phases: preprocessing, session start, per-video pipeline. Components, formulas, data structures, metrics. |
 | 06  | [Demo Overview](documentation/06-demo-overview.md)         | Demo format, users, preprocessing step, and four journeys    |
-| 07  | [Architecture](documentation/07-architecture.md)           | Component boundaries and data flow                           |
+| 07  | [Architecture](documentation/07-architecture.md)           | Three-phase system design with diagrams. FastAPI, SQLite, MinIO for prototype. Production scaling, LLM layer, and why the interaction path has no LLM calls. |
 | 08  | [Design Document](documentation/08-design-document.md)     | Implementation plan and build order                          |
 
 ## Project Structure

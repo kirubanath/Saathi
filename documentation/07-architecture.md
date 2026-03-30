@@ -4,40 +4,123 @@ This document covers how Saathi is structured as a system: the components, the d
 
 ---
 
-## System Diagram
+## System Diagrams
 
-Three phases. Two data stores. One LLM layer that only runs offline.
+Three diagrams, one per system phase. The LLM layer only appears in ingestion. Session start and per-video are pure scoring, selection, and read/write logic with no LLM calls.
+
+### Content Ingestion
+
+Video ingestion is fully offline and async. It runs independently of any user interaction.
 
 ```mermaid
 flowchart TD
-    ART[("Object Storage\nVideo Artifacts")]
-    UD[("User Database")]
+    VU["Video Uploaded"]
 
-    subgraph Offline["Offline: Video Ingestion"]
-        TR["Transcript"] --> LLC["LLM Layer"]
-        LLC --> PRE["Preprocessing Pipeline\nConcept Extraction, Recap Generation, Question Generation"]
+    subgraph IngestionBackend["Content Pipeline - Async"]
+        JQ["Job Queue"]
+        PW["Preprocessing Worker - Concept Extraction, Recap, Questions"]
+        JQ -.-> PW
     end
 
-    subgraph SessionStart["Session Start"]
-        OPEN["User opens app"] --> SURF["Recall Surface"]
-        SURF --> RA["Recall Answered"]
+    subgraph IngestionExt["External Services"]
+        LLM["LLM Provider - Anthropic / Gemini"]
     end
 
-    subgraph PerVideo["Per-Video: 80% Watch Completion"]
-        W80["80% watch completion"] --> USC["User State Classifier"]
-        USC --> ENG["Recap + Quiz + Recommendation Engines"]
-        ENG --> KSU["Knowledge State Updater + Recall Scheduler"]
+    subgraph IngestionStorage["Storage Layer"]
+        OBJ[("Object Storage - Video Artifacts")]
     end
 
-    PRE --> ART
-    ART --> ENG
-    UD --> SURF
-    RA --> UD
-    UD --> USC
-    KSU --> UD
+    VU -.->|async trigger| JQ
+    PW -->|LLM calls| LLM
+    PW -->|write artifacts| OBJ
 ```
 
-The LLM layer only appears in the offline phase. Everything in session start and per-video is selection, scoring, and read/write logic. No LLM calls happen at interaction time.
+### Per-Video Learning Loop
+
+Fires at 80% watch completion. The full learning loop runs here: classification, recap, quiz, knowledge update, recommendation, and recall scheduling.
+
+```mermaid
+flowchart TD
+    subgraph LLClient["Client"]
+        W80["80 Percent Watch Completion"]
+    end
+
+    subgraph LLApi["API Layer - Stateless"]
+        LB["Load Balancer"]
+        FA["FastAPI Instance"]
+        LB --> FA
+    end
+
+    subgraph LLEngine["Learning Engine"]
+        USC["User State Classifier"]
+        RE["Recap Engine"]
+        QE["Quiz Engine"]
+        EVAL["Response Evaluator"]
+        KSU["Knowledge State Updater"]
+        PU["Progress Update"]
+        REC["Recommendation Engine"]
+        RS["Recall Scheduler"]
+        USC --> RE
+        RE --> QE
+        QE --> EVAL
+        EVAL --> KSU
+        KSU --> PU
+        PU --> REC
+        KSU --> RS
+    end
+
+    subgraph LLStorage["Storage Layer"]
+        OBJ[("Object Storage - Video Artifacts")]
+        UDB[("User Database - OLTP")]
+    end
+
+    W80 --> LB
+    LB --> FA
+    FA --> USC
+    UDB -->|user state| USC
+    OBJ -->|video artifacts| RE
+    OBJ -->|video artifacts| REC
+    KSU -->|state update| UDB
+    RS -->|state update| UDB
+```
+
+### Session Start
+
+Fires when the user opens the app. Surfaces pending recalls, runs the response through the evaluator, and updates the user's knowledge state and recall schedule.
+
+```mermaid
+flowchart TD
+    subgraph SSClient["Client"]
+        APP["User Opens App"]
+    end
+
+    subgraph SSApi["API Layer - Stateless"]
+        LB2["Load Balancer"]
+        FA2["FastAPI Instance"]
+        LB2 --> FA2
+    end
+
+    subgraph SSFlow["Session Start"]
+        RSURF["Recall Surface"]
+        REVAL["Response Evaluator"]
+        KSUR["Knowledge State Updater"]
+        RSCHED["Recall Scheduler"]
+        RSURF --> REVAL
+        REVAL --> KSUR
+        KSUR --> RSCHED
+    end
+
+    subgraph SSStorage["Storage Layer"]
+        UDB2[("User Database - OLTP")]
+    end
+
+    APP --> LB2
+    LB2 --> FA2
+    FA2 --> RSURF
+    UDB2 -->|user state| RSURF
+    KSUR -->|state update| UDB2
+    RSCHED -->|interval update| UDB2
+```
 
 ---
 
@@ -70,21 +153,24 @@ LLMClient
 
 Each wrapper implements the same interface: takes a prompt, returns a structured response. Switching providers is a config change, not a code change.
 
+The LLM layer is only called during preprocessing. No component in the session start or per-video pipeline makes an LLM call.
+
 ---
 
 ## Components
 
 | Component | Reads | Writes | Prototype | Production |
 |---|---|---|---|---|
-| **Preprocessing Pipeline** | Transcript | Object storage | Manual Python script | Event-driven via job queue on video ingestion |
+| **Preprocessing Worker** | Transcript | Object storage | Manual Python script | Async worker triggered via job queue |
 | **User State Classifier** | User database | Nothing (passed in memory) | FastAPI reads SQLite | FastAPI reads relational database |
 | **Recap Engine** | Object storage, user database | Nothing (passed in memory) | FastAPI reads MinIO and SQLite | FastAPI reads object storage and database |
 | **Quiz Engine** | Object storage, user database | Nothing (passed in memory) | FastAPI reads MinIO and SQLite | FastAPI reads object storage and database |
-| **Response Evaluator** | Quiz answers, correct indices | Nothing (passed in memory) | Fully deterministic | Identical |
-| **Knowledge State Updater** | Quiz results, current scores | User database | FastAPI writes to SQLite | FastAPI writes to relational database |
+| **Response Evaluator** | Quiz or recall answers, correct indices | Nothing (passed in memory) | Fully deterministic | Identical |
+| **Knowledge State Updater** | Quiz or recall results, current scores | User database | FastAPI writes to SQLite | FastAPI writes to relational database |
 | **Progress Update** | Before and after knowledge scores | Nothing (rendered to UI) | FastAPI returns string, Streamlit renders | FastAPI returns string, mobile client renders |
 | **Recommendation Engine** | Object storage, user database | Nothing (passed in memory) | FastAPI reads MinIO and SQLite | FastAPI reads object storage and database |
 | **Recall Scheduler** | Quiz results, concept scores | User database | FastAPI writes to SQLite | FastAPI writes to relational database |
+| **Recall Surface** | User database | Nothing (passed in memory) | FastAPI reads SQLite | FastAPI reads relational database |
 
 Component logic does not change between prototype and production. What changes is where they read from and write to.
 
@@ -94,23 +180,23 @@ Component logic does not change between prototype and production. What changes i
 
 Three stores. Saathi owns two of them.
 
-### Object Storage (Video Artifacts)
+### Object Storage
 
-Written once by the preprocessing pipeline at ingestion. Never updated after that. Contains the concept profile, recap bullets, and questions for every video.
+Written once by the preprocessing worker at ingestion. Never updated after that. Contains the concept profile, recap bullets, and questions for every video.
 
-MinIO runs locally for the prototype and exposes the same S3-compatible API as any production object store. In production, the endpoint URL points to the actual object store instead.
+MinIO runs locally for the prototype and exposes the same S3-compatible API as any production object store. In production, the endpoint URL and credentials point to the actual object store. No code changes.
 
 ### Raw Videos
 
-Seekho's existing storage. Saathi does not own or manage this. The preprocessing pipeline takes a transcript as input, not the raw video file.
+Seekho's existing storage. Saathi does not own or manage this. The preprocessing worker takes a transcript as input, not the raw video file.
 
 ### User Database
 
-Knowledge state, watch history, and recall queue all live in one database per user.
+Knowledge state, watch history, and recall queue all live in one database. One record per user.
 
 SQLite serves as the database for the prototype. SQLAlchemy is the ORM. In production, only the connection string changes.
 
-The recall queue is a table in the same database. At session start, one query fetches all pending entries for that user. Filtering by eligibility and ranking by priority happen in application code. Priority is derived at read time, not stored. This means if a concept score changes between sessions, the ranking automatically reflects it.
+The recall queue lives in the same database as a set of entries per user. At session start, one query fetches all pending entries for that user. Filtering by eligibility and ranking by priority happen in application code. Priority is derived at read time, not stored. If a concept score changes between sessions, the ranking automatically reflects it.
 
 ```json
 {
@@ -157,21 +243,21 @@ All three happen as a single atomic write.
 
 **Prototype**
 
-Two local processes: Streamlit and FastAPI. Streamlit is the demo UI. FastAPI owns all pipeline logic and data access. Data lives in SQLite and MinIO. The preprocessing pipeline is a separate Python script run manually before the demo, writing artifacts to MinIO and seeding SQLite with demo users.
+Two local processes: Streamlit and FastAPI. Streamlit is the demo UI. FastAPI owns all pipeline logic and data access. Data lives in SQLite and MinIO. The preprocessing worker is a separate Python script run manually before the demo, writing artifacts to MinIO and seeding SQLite with demo users.
 
 **Production**
 
-FastAPI runs hosted behind a load balancer. Seekho's mobile client replaces Streamlit. SQLite is replaced by a relational database and MinIO by production object storage. The preprocessing pipeline runs as an async worker triggered on video ingestion via a job queue.
+FastAPI runs hosted behind a load balancer. Seekho's mobile client replaces Streamlit. SQLite is replaced by a relational database and MinIO by production object storage. The preprocessing worker runs as an async job triggered on video ingestion via a job queue.
 
 ---
 
 ## Scaling
 
-The interaction path has no LLM calls. Every user request hits FastAPI, reads from the database and object storage, runs scoring and selection logic, and writes back. This path scales horizontally by adding FastAPI instances behind the load balancer. It has no dependency on LLM provider availability, rate limits, or inference latency.
+The interaction path has no LLM calls. Every user request hits the load balancer, routes to a stateless FastAPI instance, reads from the database and object storage, runs scoring and selection logic, and writes back. This path scales horizontally by adding FastAPI instances. It has no dependency on LLM provider availability, rate limits, or inference latency.
 
 The database handles concurrent writes through connection pooling and row-level locking. Two users updating their own records never block each other.
 
-Preprocessing scales via a job queue. A video upload triggers a job. Workers process jobs in parallel. LLM rate limits apply here but preprocessing is offline and async, so it does not affect users.
+Preprocessing scales via the job queue. A video upload triggers a job. Workers process jobs in parallel. LLM rate limits apply here but preprocessing is offline and async so it does not affect the interaction path.
 
 **Conversational mode is a different problem.**
 
