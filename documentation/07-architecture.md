@@ -10,27 +10,31 @@ Three phases. Two data stores. One LLM layer that only runs offline.
 
 ```mermaid
 flowchart TD
+    ART[("Video Artifacts\nS3")]
+    UD[("User Database")]
+
     subgraph Offline["Offline: Video Ingestion"]
         TR["Transcript"] --> LLC["LLM Layer"]
         LLC --> PRE["Preprocessing Pipeline\nConcept Extraction, Recap Generation, Question Generation"]
-        PRE --> ART[("Video Artifacts")]
     end
 
     subgraph SessionStart["Session Start"]
         OPEN["User opens app"] --> SURF["Recall Surface"]
-        UD[("User Database")] --> SURF
         SURF --> RA["Recall Answered"]
-        RA --> UD
     end
 
     subgraph PerVideo["Per-Video: 80% Watch Completion"]
         W80["80% watch completion"] --> USC["User State Classifier"]
-        UD --> USC
-        ART --> ENG["Recap + Quiz + Recommendation Engines"]
-        USC --> ENG
+        USC --> ENG["Recap + Quiz + Recommendation Engines"]
         ENG --> KSU["Knowledge State Updater + Recall Scheduler"]
-        KSU --> UD
     end
+
+    PRE --> ART
+    ART --> ENG
+    UD --> SURF
+    RA --> UD
+    UD --> USC
+    KSU --> UD
 ```
 
 The LLM layer only appears in the offline phase. Everything in session start and per-video is selection, scoring, and read/write logic. No LLM calls happen at interaction time.
