@@ -681,17 +681,17 @@ IS-to-AS Conversion Rate is separate from the loop health metrics. It measures w
 
 ## Demo Dataset
 
-**Taxonomy:** Two aspiration categories are fully built for the demo. Career & Jobs has 5 concepts: `body_language`, `voice_modulation`, `answering_structure`, `handling_nervousness`, `preparation`. English Speaking has 4 concepts: `vocabulary`, `pronunciation`, `fluency`, `grammar`. Sarkari Kaam (utility) and Cricket (entertainment) have no concept taxonomy. Utility and entertainment categories are classified at the category level and do not go through concept extraction.
+**Taxonomy:** Two aspiration categories are fully built for the demo. Career & Jobs has 5 concepts: `body_language`, `voice_modulation`, `answering_structure`, `handling_nervousness`, `preparation`. English Speaking has 4 concepts: `vocabulary`, `pronunciation`, `fluency`, `grammar`. Sarkari Kaam, Mobile Tricks (both utility), and Cricket (entertainment) have no concept taxonomy. Utility and entertainment categories are classified at the category level and do not go through concept extraction.
 
 **User records (SQLite):** Two users seeded into the database before the demo. Each record contains the full profile, knowledge state, watch history, and recall queue in a single user record (see Knowledge State Architecture).
 
-Priya: AS, Warming Up, 14 days on platform, 8 total videos watched. Her watch history includes ep 1 of the Interview Confidence series (vid_001) and ep 1 of the Career Foundations series (vid_004), which is what produces her AS classification under the rolling window classifier (Step 2: depth signal). Her knowledge state has pre-loaded weak spots in `body_language` (0.3) and `answering_structure` (0.25), with current scores slightly above that from prior quiz sessions. Her record includes a pre-populated recall queue with pending entries for the concepts she was quizzed on. Because she is mid-series in both Career & Jobs series, her recommendation always shows a Slot 1.
+Priya: AS, Warming Up, 14 days on platform, 8 total videos watched. Her watch history includes 3 abstract Career & Jobs entries from prior sessions (pre-seeded in the database, not from the named demo video set). These 3 entries are what produce her AS classification via Step 2 (depth signal: 3+ in one aspiration category). Her knowledge state has pre-loaded weak spots in `body_language` (0.3) and `answering_structure` (0.25), with voice_modulation at 0.7. Her record includes a pre-populated recall queue with pending entries. For the demo journeys, she is watching the Interview Confidence series for the first time.
 
 Rahul: IS, New, 3 days on platform, 2 aspiration videos watched (1 Career & Jobs, 1 English Speaking), no concentration in any single category. Classified IS via the new-user default (Step 3): fewer than 5 non-entertainment videos total. No quizzes completed, empty knowledge state, no recall entries.
 
 Together they demonstrate how the same video produces a different experience depending on who is watching.
 
-**Videos (11 total across 5 series):**
+**Videos (15 total across 7 series):**
 
 Career & Jobs, aspiration, 2 series:
 - Series "Interview Confidence" (series_cj_001): vid_001 Body Language in Interviews (ep 1), vid_002 Answering Questions with Structure (ep 2), vid_003 Voice and Confidence Under Pressure (ep 3)
@@ -700,8 +700,12 @@ Career & Jobs, aspiration, 2 series:
 English Speaking, aspiration, 1 series:
 - Series "Spoken English Basics" (series_es_001): vid_006 Pronunciation That Gets You Heard (ep 1), vid_007 Everyday Vocabulary for Conversations (ep 2)
 
-Sarkari Kaam, utility, 1 series:
+Sarkari Kaam, utility, 2 series:
 - Series "Government Documents" (series_sk_001): vid_008 How to Get Your PAN Card (ep 1), vid_009 How to Link Aadhaar to Your Phone (ep 2)
+- Series "Voter Services" (series_sk_002): vid_012 How to Register as a Voter (ep 1), vid_013 How to Check Your Voter Status (ep 2)
+
+Mobile Tricks, utility, 1 series:
+- Series "Phone Basics" (series_mt_001): vid_014 How to Manage Mobile Data Settings (ep 1), vid_015 WhatsApp Tips Everyone Should Know (ep 2)
 
 Cricket, entertainment, 1 series:
 - Series "Cricket Basics" (series_cr_001): vid_010 How T20 Scoring Works (ep 1), vid_011 Great Catches That Changed Matches (ep 2)
