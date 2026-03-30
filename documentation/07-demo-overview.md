@@ -33,7 +33,7 @@ Each journey is a staged scenario: a specific user watching a specific video, wi
 
 The sidebar has a Reset button. Clicking it re-seeds both users and clears any state written during the current journey. This is how the presenter moves between journeys cleanly.
 
-You can keep going after any journey. The system does not stop. Journey 4 ends the demo narrative, not the system. After the four journeys, an evaluator can click freely and the system keeps responding correctly. The journeys are sufficient to prove the system works, but they are not a ceiling.
+You can keep going after any journey. The system does not stop. All five journeys together form the complete demo narrative. After the five journeys, an evaluator can click freely and the system keeps responding correctly. The journeys are sufficient to prove the system works, but they are not a ceiling.
 
 Journey 3 branches. Priya receives two recommendation slots after Journey 1 (Slot 1: next in the same series she just watched, Slot 2: engine pick). The presenter clicks one. The demo shows that path in full. The other path can be described verbally or shown with a reset.
 
@@ -63,7 +63,7 @@ Slot 1 is deterministic and will always return the same result for the same user
 
 **What the evaluator should see:** The LLM is called here, not during user interactions. Every personalized response in the four journeys is the system selecting from what was generated in this step. This pipeline only runs for aspiration videos. Utility and entertainment videos skip it entirely. The cost of running Saathi at interaction time is scoring and selection logic, not LLM inference.
 
-## Four Journeys
+## Five Journeys
 
 Each journey is a staged scenario. The presenter resets between journeys using the sidebar button.
 

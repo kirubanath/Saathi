@@ -222,9 +222,9 @@ Selects questions from the video dict for the same concepts the recap just cover
 
 One question per concept. Difficulty is set by the user's current concept score:
 
-- Score below 0.2: Easy
-- Score 0.2 to 0.5: Medium
-- Score above 0.5: Hard
+- Score below 0.4: Easy
+- Score 0.4 to 0.7: Medium
+- Score above 0.7: Hard
 
 For AS New and Converting users, difficulty is capped at medium regardless of score. This keeps the first few sessions approachable.
 
