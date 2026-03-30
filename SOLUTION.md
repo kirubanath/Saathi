@@ -97,7 +97,7 @@ The system runs in three phases. All LLM work happens in preprocessing. The sess
 
 **Preprocessing (once per video, at ingestion):**
 
-**1. Concept Extractor:** Maps the video transcript to the fixed concept taxonomy for its category (4-5 concepts each). Produces a concept profile with coverage scores per concept. Concepts below 0.2 coverage are excluded. Only skill-learning categories get concept mappings.
+**1. Concept Extractor:** Maps the video transcript to the fixed concept taxonomy for its category (4-5 concepts each). Produces a concept profile with coverage scores per concept. Concepts below 0.2 coverage are excluded. Only aspiration categories get concept mappings.
 
 **2. Recap Bullet Generator:** For each concept in the profile, generates two recap bullets: one IS-flavored (low pressure, immediate usefulness) and one AS-flavored (richer, frames the concept as part of ongoing skill development). Both stored per concept. At interaction time, the system selects which version to show based on user type.
 
@@ -121,7 +121,7 @@ When a user opens the app, two checks run before normal browsing begins. If pend
 
 **9. Progress Update:** Shows the user what changed after the quiz. "Body Language: 30% to 51%." Shifts to encouragement if scores dropped. Shown for AS and Converting users only.
 
-**10. Recommendation Engine:** Outputs a single video with an explanation of why. Gap-weighted relevance scoring with softmax sampling. Temperature varies by user state. 80/15/5 same-category/adjacent/discovery pool split. 0.5 neutral prior for unseen categories.
+**10. Recommendation Engine:** Outputs at most two slots. Slot 1 is series continuation: if the user is mid-series, the next episode fills Slot 1 via direct lookup with no scoring. If the series is finished, Slot 1 is empty. Slot 2 formula varies by content type. Aspiration: gap-weighted relevance scoring with softmax sampling, 80/15/5 same-category/adjacent/discovery pool split, 0.5 neutral prior for unseen categories, temperature varies by user state. Entertainment: 40/30/30 split across same entertainment category, other entertainment, and aspiration content; series entry points within each bucket. Utility: 50/30/20 split across same utility, other utility, and aspiration content; series entry points within each bucket. No gap scoring for entertainment or utility.
 
 **11. Recall Scheduler:** Writes recall entries for concepts that were quizzed. Only for AS Warming Up and Established users. Base intervals by score, correct doubles, wrong halves (min 12 hours). At session start, top 3-5 due recalls surface first by priority (urgency x importance). Questions drawn from the pre-generated bank, scoped to watched videos.
 

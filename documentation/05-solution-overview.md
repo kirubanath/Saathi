@@ -26,7 +26,7 @@ flowchart TD
 
 ### Step 1: Concept Extraction
 
-Maps the transcript to the fixed concept taxonomy for that video's category. The taxonomy is authored once per skill-learning category, with 4-5 concepts per category. The extractor does not invent new concepts outside this taxonomy.
+Maps the transcript to the fixed concept taxonomy for that video's category. The taxonomy is authored once per aspiration category, with 4-5 concepts per category. The extractor does not invent new concepts outside this taxonomy.
 
 The output is a concept profile: a dictionary of concept key to coverage score (0 to 1). Concepts below 0.2 coverage are excluded. A brief mention of a concept should not generate recap bullets or quiz questions about it.
 
@@ -208,7 +208,7 @@ Selects which pre-generated bullets to show the user. No LLM call at this step.
 
 Concepts are ranked by `coverage_score x user_gap`, where `user_gap = 1 - knowledge_state[concept]`. The top 2 or 3 are shown depending on user type. For a new user with no knowledge state, all gaps are 1.0, so selection falls back to coverage score alone.
 
-Example for Priya (AS, Warming Up) after watching an interview confidence video, with `body_language` at 0.3 and `answering_structure` at 0.3:
+Example for Priya (AS, Warming Up) after watching an interview confidence video, with `body_language` at 0.3 and `answering_structure` at 0.25:
 
 > - Body language speaks before you do. Sit upright, keep your hands calm, and make eye contact when answering.
 > - When you get a question, pause for a second before answering. Structure your response: what you did, how you did it, and what happened.
@@ -288,13 +288,21 @@ If no concept improved, the message shifts to encouragement: "Tough questions. S
 
 #### 7. Recommendation Engine
 
-Selects the next video. The output is one video with a brief explanation of why it was chosen. One clear next step, not a list to scroll through.
+At the end of each video, the user sees at most two recommendation slots.
 
-**Candidate pool:**
+**Slot 1: series continuation.** If the user is mid-series, the next video in the current series always fills Slot 1. No scoring is applied. It is a direct lookup by `series_id` and `series_position` on the video record. If the current video is the last in its series, Slot 1 is empty and only Slot 2 is shown.
 
-- 80% from the same category the user just watched
-- 15% from adjacent categories (editorial adjacency map)
-- 5% random from the full catalog
+**Slot 2: engine pick.** One video selected by the engine. The formula depends on the content type of the video just watched.
+
+**Aspiration videos**
+
+The pool is built from series representatives, not individual videos. For each series in the catalog, the representative is the next unwatched episode: episode 1 if the user has never started the series, the next episode after the last watched if they are mid-series, and excluded entirely if the series is complete. This gives one candidate per series in the pool.
+
+Candidate pool:
+
+- 80% of series representatives from the same category the user just watched
+- 15% of series representatives from adjacent categories (editorial adjacency map)
+- 5% random series representatives from the full catalog
 
 The adjacent 15% is how IS users get gentle exposure to aspiration content. The random 5% is the discovery bucket: without it, the system is fully controlled and users never stumble across something unexpected.
 
@@ -332,6 +340,24 @@ prob(video) proportional to exp(final_score / temperature)
 ```
 
 Temperature by user state: AS Established = 0.3 (sharp targeting), AS Warming Up = 0.5, IS Warming Up = 0.8, IS New = 1.2, first session = 1.5. Higher temperature means broader exploration; lower means tighter targeting.
+
+**Entertainment and utility videos**
+
+No concept taxonomy exists for these content types, so gap scoring is not applicable. A simplified distribution is used instead. The same series representative logic applies: one video per series in the pool, which is the next unwatched episode (episode 1 if the series was never started, the next episode after the last watched if mid-series, excluded if complete). This ensures users are never dropped mid-series and the pool stays fresh as they progress.
+
+For entertainment:
+
+- 40% from the same entertainment category, series entry point
+- 30% from other entertainment categories, series entry point
+- 30% from aspiration content, series entry point
+
+For utility:
+
+- 50% from the same utility category, series entry point
+- 30% from other utility categories, series entry point
+- 20% from aspiration content, series entry point
+
+The aspiration entry point slot in both distributions serves the same role as the adjacent 15% in the aspiration formula: it is how entertainment and utility users first encounter skill-building content.
 
 ---
 
@@ -458,6 +484,8 @@ Questions are stored per concept per difficulty, with multiple questions at each
 ```json
 {
   "video_id": "vid_003",
+  "series_id": "series_interview_confidence",
+  "series_position": 2,
   "category": "Career & Jobs",
   "content_type": "aspiration",
   "concept_profile": {
@@ -645,21 +673,34 @@ IS-to-AS Conversion Rate is separate from the loop health metrics. It measures w
 
 ## Demo Dataset
 
-**taxonomy.json:** 4 demo categories from Seekho's actual category list. Career & Jobs is fully detailed with 5 concepts: `body_language`, `voice_modulation`, `answering_structure`, `handling_nervousness`, `preparation`. The other 3 (English Speaking, Business, Share Market) are named but their concept breakdowns are placeholders. In production, every skill-learning category gets its own 4-5 concept mapping.
+**Taxonomy:** Two aspiration categories are fully built for the demo. Career & Jobs has 5 concepts: `body_language`, `voice_modulation`, `answering_structure`, `handling_nervousness`, `preparation`. English Speaking has 4 concepts: `vocabulary`, `pronunciation`, `fluency`, `grammar`. Sarkari Kaam (utility) and Cricket (entertainment) have no concept taxonomy. Utility and entertainment categories are classified at the category level and do not go through concept extraction.
 
 **User records (SQLite):** Two users seeded into the database before the demo. Each record contains the full profile, knowledge state, watch history, and recall queue in a single user record (see Knowledge State Architecture).
 
-Priya: AS, Warming Up, 14 days on platform, 8 total videos watched. Her watch history includes at least 3 Career & Jobs videos, which is what produces her AS classification under the rolling window classifier (Step 2: depth signal). Her knowledge state has pre-loaded weak spots in `body_language` (0.3) and `answering_structure` (0.25), with current scores slightly above that from prior quiz sessions. Her record includes a pre-populated recall queue with pending entries for the concepts she was quizzed on.
+Priya: AS, Warming Up, 14 days on platform, 8 total videos watched. Her watch history includes ep 1 of the Interview Confidence series (vid_001) and ep 1 of the Career Foundations series (vid_004), which is what produces her AS classification under the rolling window classifier (Step 2: depth signal). Her knowledge state has pre-loaded weak spots in `body_language` (0.3) and `answering_structure` (0.25), with current scores slightly above that from prior quiz sessions. Her record includes a pre-populated recall queue with pending entries for the concepts she was quizzed on. Because she is mid-series in both Career & Jobs series, her recommendation always shows a Slot 1.
 
-Rahul: IS, New, 3 days on platform, 2 aspiration videos watched (1 Career & Jobs, 1 Business), no concentration in any single category. Classified IS via the new-user default (Step 3): fewer than 5 non-entertainment videos total. No quizzes completed, empty knowledge state, no recall entries.
+Rahul: IS, New, 3 days on platform, 2 aspiration videos watched (1 Career & Jobs, 1 English Speaking), no concentration in any single category. Classified IS via the new-user default (Step 3): fewer than 5 non-entertainment videos total. No quizzes completed, empty knowledge state, no recall entries.
 
 Together they demonstrate how the same video produces a different experience depending on who is watching.
 
-**videos.json:** 5 videos. 4 aspiration (Career & Jobs) and 1 utility (Sarkari Kaam). One transcript-backed video serves as the primary demo.
+**Videos (11 total across 5 series):**
 
-**Video artifacts (MinIO):** Pre-generated video artifacts loaded into MinIO before the demo. Each artifact contains the concept profile, recap bullets (IS and AS versions per concept), and questions (multiple per concept per difficulty), all produced by running the preprocessing worker on the demo transcript. The preprocessing worker writes directly to MinIO. At interaction time, FastAPI reads artifacts from MinIO.
+Career & Jobs, aspiration, 2 series:
+- Series "Interview Confidence" (series_cj_001): vid_001 Body Language in Interviews (ep 1), vid_002 Answering Questions with Structure (ep 2), vid_003 Voice and Confidence Under Pressure (ep 3)
+- Series "Career Foundations" (series_cj_002): vid_004 Resume Tips That Actually Work (ep 1), vid_005 Salary Negotiation for Freshers (ep 2)
 
-**transcripts/interview_confidence.txt:** Roughly 800 words covering all four Career & Jobs demo concepts. This is the input to the preprocessing worker.
+English Speaking, aspiration, 1 series:
+- Series "Spoken English Basics" (series_es_001): vid_006 Pronunciation That Gets You Heard (ep 1), vid_007 Everyday Vocabulary for Conversations (ep 2)
+
+Sarkari Kaam, utility, 1 series:
+- Series "Government Documents" (series_sk_001): vid_008 How to Get Your PAN Card (ep 1), vid_009 How to Link Aadhaar to Your Phone (ep 2)
+
+Cricket, entertainment, 1 series:
+- Series "Cricket Basics" (series_cr_001): vid_010 How T20 Scoring Works (ep 1), vid_011 Great Catches That Changed Matches (ep 2)
+
+**Video artifacts (MinIO):** Only aspiration videos (vid_001 through vid_007) go through full preprocessing: concept profile, recap bullets (IS and AS versions per concept), and questions (multiple per concept per difficulty). Utility and entertainment videos have metadata only. All artifacts are pre-generated and loaded into MinIO before the demo. At interaction time, FastAPI reads artifacts from MinIO.
+
+**Primary demo transcript:** vid_001 (Body Language in Interviews), roughly 800 words covering body_language and handling_nervousness concepts from the Career & Jobs taxonomy. This is the transcript shown live in Step 0 of the demo.
 
 ---
 

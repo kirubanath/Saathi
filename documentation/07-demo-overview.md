@@ -11,7 +11,7 @@ Is this system making decisions based on who the user is, or is it just calling 
 - System behavior changes based on user state, not content alone
 - No LLM calls happen in the runtime path
 - The learning loop compounds across sessions
-- Recommendations are driven by knowledge gaps, not content similarity
+- Recommendations are personalized by content type: gap-driven for aspiration content, series-entry distribution for entertainment and utility
 
 ## Format
 
@@ -25,9 +25,9 @@ The evaluator sees both the outcome and the reasoning behind it at the same time
 
 ## Demo Users
 
-**Priya (Aspiration Seeker):** Warming Up, 14 days, 3 videos watched in Career & Jobs. Knowledge state pre-loaded with weak spots (body_language 0.3, answering_structure 0.25, voice_modulation 0.7).
+**Priya (Aspiration Seeker):** Warming Up, 14 days. Has watched ep 1 of the Interview Confidence series (vid_001) and ep 1 of the Career Foundations series (vid_004), both Career & Jobs. This gives her the AS classification via depth signal (3+ in one category). Knowledge state pre-loaded with weak spots (body_language 0.3, answering_structure 0.25, voice_modulation 0.7). She is mid-series in both Career & Jobs series, so Slot 1 is always populated in her recommendations.
 
-**Rahul (Information Seeker):** New, 3 days, 2 aspiration videos watched (1 Career & Jobs, 1 Business), no single-category concentration. Empty knowledge state.
+**Rahul (Information Seeker):** New, 3 days, 2 aspiration videos watched (1 Career & Jobs, 1 English Speaking), no single-category concentration. Empty knowledge state.
 
 ## Step 0: Video Preprocessing
 
@@ -65,7 +65,7 @@ Each journey runs independently. The evaluator selects a journey from the demo, 
 6. Priya answers. Response evaluator scores each question. Right panel shows results per concept.
 7. Knowledge state updater applies EMA. Right panel shows before/after scores: body_language 0.30 -> 0.51 (correct), answering_structure 0.25 -> 0.175 (wrong), voice_modulation 0.70 -> 0.79 (correct).
 8. Progress update shown to Priya on the left: "Body Language: 30% -> 51%. Voice Modulation: 70% -> 79%." Answering structure is not shown as a gain. Right panel shows the update logic.
-9. Recommendation engine runs. Right panel shows the gap vector, relevance scores for candidate videos, and the softmax sampling. Left panel shows the recommended video with an explanation: "Based on what you just practiced, this will help you work on your answering structure."
+9. Recommendation engine runs. The engine first checks whether this video is mid-series. Right panel shows the series lookup result for Slot 1. Then the aspiration formula runs for Slot 2: right panel shows the gap vector, relevance scores for candidate videos, and the softmax sampling. Left panel shows both slots if the series has a next episode, or just Slot 2 if the series is finished or Priya is not in a series.
 10. Recall scheduler writes entries to the queue for all 3 quizzed concepts. Right panel shows the scheduled recall times per concept.
 
 **What the evaluator should see:** The system classified Priya before doing anything. The recap targeted her weak spots, not the video's main topics. The quiz adapted to her level. The recommendation followed from her actual performance, not a generic "watch next." Every decision is visible in the right panel.
@@ -108,7 +108,7 @@ Each journey runs independently. The evaluator selects a journey from the demo, 
 5. Quiz engine serves questions. answering_structure gets an easy question this time (score 0.175, below the 0.2 threshold), a step down from the medium it got in Journey 1. body_language gets a hard question (score 0.51, above the 0.5 threshold), a step up from medium in Journey 1. Right panel shows the difficulty shift for each concept and why.
 6. Priya answers correctly this time. Knowledge state updates: answering_structure 0.175 -> 0.42 (correct), body_language advances further if the hard question lands.
 7. Progress update reflects the recovery: "Answering Structure: 17% -> 42%. Nice comeback."
-8. Recommendation engine runs again. The gap vector has shifted. The next recommendation is different from both Journey 1's recommendation and from what it would have been without the quiz data. Right panel shows the full scoring comparison.
+8. Recommendation engine runs again. The series continuation check runs first for Slot 1. For Slot 2, the gap vector has shifted and the scoring produces a different result from Journey 1. Right panel shows the full scoring comparison alongside the series check, making the compounding visible.
 
 **What the evaluator should see:** The system adapted in both directions. answering_structure difficulty stepped down after a wrong answer. body_language difficulty stepped up after a correct answer. The recap priorities flipped. This is the system responding to actual performance, not cycling through a fixed sequence. The right panel makes the compounding visible by showing before/after comparisons at every step.
 

@@ -66,7 +66,7 @@ EMA was chosen over binary mastery (too coarse, a single wrong answer erases all
 
 ## 4. Fixed Concept Taxonomy
 
-Each skill-learning category maps to 4-5 fixed concepts. Entertainment and utility categories get no concept mapping.
+Each aspiration category maps to 4-5 fixed concepts. Utility and entertainment categories get no concept mapping.
 
 The reason for fixing the taxonomy is consistent tracking. If concepts were derived dynamically from each video, two videos covering the same skill would produce incompatible concept names and there would be no way to accumulate a user's knowledge state across videos in the same category. The taxonomy is what makes per-concept scores meaningful over time.
 
@@ -90,17 +90,19 @@ Questions are generated at three difficulty levels (easy, medium, hard) per conc
 
 ---
 
-## 6. Recommendation: Gap-Based Scoring with Softmax Sampling
+## 6. Recommendation: 2-Slot Output with Per-Content-Type Formulas
 
-The recommendation engine scores candidate videos by how well they cover the user's weak concepts, then samples from the scored list using softmax rather than returning the top-ranked result deterministically.
+The recommendation engine always outputs at most two slots, not a single video.
 
-Scoring on knowledge gaps (rather than content similarity or collaborative filtering) keeps the recommendation directly tied to the learning objective. The system is not optimizing for watch time. It is trying to move the user forward on the concepts they have not yet mastered.
+**Slot 1 is series continuation.** If the user is mid-series, the next episode in that series fills Slot 1 with no scoring: it is a direct lookup by series ID and position. This is separated from the discovery engine entirely because series progression is deterministic and should never compete with gap-scored candidates. If the series is finished, Slot 1 is empty and only Slot 2 is shown.
 
-The candidate pool is split 80/15/5: 80% from the same category as the just-watched video, 15% from adjacent categories defined by an editorial adjacency map, and 5% from the full catalog. This ratio prevents the system from trapping users in a single topic while ensuring most recommendations stay relevant to what they are actively working on. The adjacent 15% is also the mechanism by which IS users get exposure to aspiration content in related categories.
+**Slot 2 is the engine pick.** The formula that fills Slot 2 depends on the content type of the video just watched, because the same scoring approach does not apply across all three types.
 
-Softmax sampling over greedy ranking prevents the system from surfacing the same video every time the user's knowledge state is stable. It introduces controlled exploration without fully randomizing the output.
+For aspiration content, gap-based scoring is the right fit. The system has a concept taxonomy, per-user knowledge scores, and a clear learning objective. Scoring on knowledge gaps (rather than content similarity or collaborative filtering) keeps the recommendation tied to what the user needs to learn, not what similar users watched.
 
-Temperature varies by user state to tune how much exploration each type gets:
+The pool is built from series representatives rather than individual videos. Each series contributes exactly one candidate: the next unwatched episode (episode 1 if never started, the next episode after the last watched if mid-series, excluded if complete). Scoring is applied to these representatives. The candidate pool then splits 80/15/5: 80% of series representatives from the same category, 15% from adjacent categories via an editorial adjacency map, and 5% random. The adjacent 15% is the mechanism by which IS users get exposure to aspiration content without pressure.
+
+Softmax sampling over greedy ranking prevents the system from surfacing the same video every time the user's knowledge state is stable. Temperature varies by user state:
 
 - AS Established: 0.3 (sharp targeting, the user is working on a skill)
 - AS Warming Up: 0.5
@@ -108,7 +110,15 @@ Temperature varies by user state to tune how much exploration each type gets:
 - IS New: 1.2 (broader exploration, the user is still forming preferences)
 - First session: 1.5
 
-Pure collaborative filtering was rejected because it ignores the learning goal. It would optimize for what similar users watched, not for what this user needs to learn. Greedy top-1 ranking was rejected because it produces repetitive recommendations for users with stable knowledge states.
+For entertainment and utility content, gap scoring is not applicable. There is no concept taxonomy for these types and the user is not building a knowledge model. A simplified distribution is used instead. The same series representative logic applies: one video per series in the pool, which is the next unwatched episode. The selection unit within each bucket is always a series representative, never a random mid-series video.
+
+Entertainment distribution: 40% same entertainment category, 30% other entertainment categories, 30% aspiration content.
+
+Utility distribution: 50% same utility category, 30% other utility categories, 20% aspiration content.
+
+The aspiration bucket in both entertainment and utility distributions serves the same role as the adjacent 15% in the aspiration formula. It is how entertainment and utility users first encounter skill-building content.
+
+Pure collaborative filtering was rejected because it ignores the learning goal. Greedy top-1 ranking was rejected because it produces repetitive recommendations for users with stable knowledge states. A single formula applied to all content types was rejected because gap scoring is meaningless without a concept taxonomy.
 
 ---
 
