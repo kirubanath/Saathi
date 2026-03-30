@@ -158,33 +158,9 @@ A rule-based approach was chosen over an ML model for two reasons. First, there 
 
 The tradeoff is that hard thresholds can misclassify edge cases and the classifier does not adapt between updates. These are acceptable at this stage. The right approach is to collect behavioral data after launch and use it to train a more adaptive model once ground truth exists.
 
----
+--- 
 
-## 9. Quiz Split Into Two API Calls
-
-The per-video pipeline uses two API calls.
-
-`POST /video/complete` runs the classifier, recap engine, and quiz engine. It returns the recap bullets and quiz questions to the client. The client presents the quiz and collects answers.
-
-`POST /quiz/submit` receives the answers, runs the Response Evaluator, updates the knowledge state, writes the watch history entry, schedules recalls, and runs the Recommendation Engine. It returns the progress update and the next recommended video.
-
-Splitting is necessary because the quiz is interactive. The user must read the questions and choose answers before the evaluator can run. A single endpoint cannot handle this without holding a server-side connection open for the duration of the quiz, which does not scale.
-
-The correct indices are included in the question objects returned by `/video/complete` and held by the client until submission. In the prototype this is fine. In production, correct indices would be withheld from the client response and only applied server-side during `/quiz/submit`.
-
----
-
-## 10. Recall Queue in the User Record
-
-The recall queue lives inside the user record rather than in a separate table.
-
-The reason is query simplicity. At session start, one read fetches the full user record including all pending recalls. No join, no separate query, no risk of inconsistency between two stores.
-
-Priority is calculated at read time, not stored. `priority = urgency × importance`, where `urgency = days_overdue + 1` and `importance = 1 - current_concept_score`. Storing priority would make it stale the moment the knowledge state changes. Calculating at read time means the recall ranking always reflects the user's actual current scores.
-
----
-
-## 11. Prototype and Production: Config-Level Separation
+## 9. Prototype and Production: Config-Level Separation
 
 The same application code runs in both prototype and production. What changes is configuration only.
 
@@ -194,7 +170,7 @@ The intent is that every prototype-to-production swap is one line in a config fi
 
 ---
 
-## 12. Known Limitations
+## 10. Known Limitations
 
 **The system always targets weakness.** Every recap, quiz, and recommendation points at weak spots. This is right for learning velocity but will feel exhausting over time. Real learning systems mix challenge with consolidation. A better approach would occasionally serve easier questions on strong concepts and recommend content the user is likely to enjoy, not just content they need.
 
