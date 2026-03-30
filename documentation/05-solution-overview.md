@@ -335,11 +335,10 @@ Temperature by user state: AS Established = 0.3 (sharp targeting), AS Warming Up
 
 #### 8. Recall Scheduler
 
-Writes a recall entry for each concept that was quizzed. Only runs for AS Warming Up and AS Established users.
+Writes a recall entry for each concept that was quizzed into the user's recall queue. Only runs for AS Warming Up and AS Established users. The recall queue is part of the user record, not a separate store.
 
 ```json
 {
-  "user_id": "priya_001",
   "concept_key": "body_language",
   "source_video_id": "vid_003",
   "due_at": "2026-03-30T10:00:00Z",
@@ -422,6 +421,26 @@ Watch history is used by the recommendation engine for the revisit penalty and b
         "voice_modulation": 1.0,
         "handling_nervousness": 1.0
       }
+    }
+  ],
+  "recall_queue": [
+    {
+      "concept_key": "body_language",
+      "source_video_id": "vid_003",
+      "due_at": "2026-03-30T10:00:00Z",
+      "interval_hours": 18,
+      "missed_count": 0,
+      "status": "pending",
+      "last_question_id": null
+    },
+    {
+      "concept_key": "answering_structure",
+      "source_video_id": "vid_003",
+      "due_at": "2026-03-30T10:00:00Z",
+      "interval_hours": 18,
+      "missed_count": 0,
+      "status": "pending",
+      "last_question_id": null
     }
   ],
   "last_updated": "2026-03-28T14:30:00Z"
@@ -638,7 +657,7 @@ Together they demonstrate how the same video produces a different experience dep
 
 **video_artifacts.json:** Pre-generated video dicts for all demo videos. Each dict contains the concept profile, recap bullets (IS and AS versions per concept), and questions (multiple per concept per difficulty), all produced from running the preprocessing pipeline on the demo transcript.
 
-**recall_queue.json:** Pending recall entries for Priya. Since she is AS Warming Up and has completed quizzes, the Recall Scheduler has written entries for the concepts she was quizzed on. This file is used to demonstrate the session-start recall surfacing. Rahul has no recall entries since IS users do not get recalls scheduled.
+Priya's user record includes a pre-populated `recall_queue` with pending entries for the concepts she was quizzed on. Since she is AS Warming Up and has completed quizzes, the Recall Scheduler has written entries into her record. These are used to demonstrate the session-start recall surfacing. Rahul has no recall entries since IS users do not get recalls scheduled.
 
 **transcripts/interview_confidence.txt:** Roughly 800 words covering all four Career & Jobs demo concepts. This is the input to the preprocessing pipeline.
 
