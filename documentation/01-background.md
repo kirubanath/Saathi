@@ -1,6 +1,6 @@
 # Seekho: Background
 
-## What Seekho Is (What We Know)
+## What Seekho Is (What I Know)
 
 Seekho is a short-form micro-learning platform founded in 2020. It has 25 million monthly active users, 100M+ downloads, and operates on a subscription model at Rs 200/month. Content is 3-5 minute videos in English, Hindi and Hinglish across ~40 categories including English Speaking, Career & Jobs, Business, Sarkari Kaam, Share Market, Exam Prep, and Self-Growth. All content comes from 250+ vetted creators.
 
@@ -17,3 +17,7 @@ The format fits how Indians actually consume content. Short-form, vernacular, no
 The surface problem is retention. Users watch a video, learn something in the moment, and forget it. There's no reinforcement, no spaced repetition, no practice loop. Content alone can't create lasting learning habits.
 
 That's the gap the assignment is asking me to address.
+
+---
+
+*Next: [Original Problem](02-original-problem.md)*

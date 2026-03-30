@@ -666,3 +666,7 @@ Together they demonstrate how the same video produces a different experience dep
 ## Limitations
 
 For known limitations and design tradeoffs, see [08-design-decisions.md](08-design-decisions.md).
+
+---
+
+*Next: [Architecture](06-architecture.md)*

@@ -54,3 +54,7 @@ All documentation lives in [`documentation/`](documentation/). Start with the in
 ├── pyproject.toml
 └── requirements.txt
 ```
+
+---
+
+*Next: [Solution Summary](SOLUTION.md)*

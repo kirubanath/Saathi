@@ -125,3 +125,7 @@ This prototype focuses on Proactive Mode. The proactive loop is the engine. It p
 **Conversational Mode:** An always-on chat grounded in the user's full knowledge state and watch history. When someone asks "Can you explain that differently?" or "Help me prepare for an interview tomorrow", Saathi has the context to actually help. This shares the same brain as Proactive Mode. Both read from and write to the same knowledge state.
 
 **Community-based Social Signals:** Social proof that shows movement, not ranking. "4,200 people from Rajasthan learned this skill this month." This reinforces the emotional north star at a community level. The principle from the design section applies: show users that people like them are moving forward, not where they stand relative to others.
+
+---
+
+*Next: [Scoped Problem](04-scoped-problem.md)*

@@ -21,3 +21,7 @@ Start with SOLUTION.md in the project root for a concise summary of the full pro
 **[07-demo-overview.md](07-demo-overview.md)** - How the demo works. What the demo proves, format, two demo users, the preprocessing step, and four journeys including a counterfactual proof that the system makes real decisions based on user state.
 
 **[08-design-decisions.md](08-design-decisions.md)** - Why the system is designed this way. Key decisions with reasoning and tradeoffs: LLM offline strategy, EMA alpha choices, fixed taxonomy, recall scheduling, rule-based classifier, two-call quiz design, and known limitations.
+
+---
+
+*Next: [Background](01-background.md)*

@@ -168,3 +168,7 @@ Four journeys: (1) Priya's full loop, showing how the pipeline selects and score
 *Full detail: [documentation/08-design-decisions.md](documentation/08-design-decisions.md)*
 
 The key decisions and their reasoning: why all LLM calls are offline, why EMA uses separate alphas for quiz and recall, why the taxonomy is fixed at 4-5 concepts per category, why recall scheduling uses simple intervals over SM-2, why the user state classifier is rule-based, and why the quiz splits into two API calls. Known limitations and future directions are covered in the final section.
+
+---
+
+*Next: [Documentation Index](documentation/00-index.md)*

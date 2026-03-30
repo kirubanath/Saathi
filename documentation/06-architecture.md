@@ -291,3 +291,7 @@ Preprocessing scales via the job queue. A video upload triggers a job. Workers p
 **Conversational mode is a different problem.**
 
 The full Saathi vision includes real-time conversation between users and an AI. Every message in that flow is an LLM call. At Seekho's scale that means millions of concurrent requests, direct exposure to provider rate limits and inference latency, and per-request cost that compounds with usage. The proactive loop in this prototype avoids this entirely by moving all LLM work offline. Conversational mode needs a separate architecture discussion before it is built.
+
+---
+
+*Next: [Demo Overview](07-demo-overview.md)*

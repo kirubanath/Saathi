@@ -129,3 +129,7 @@ Each journey runs independently. The evaluator selects a journey from the demo, 
 5. Remaining recalls surface (up to the daily cap). After completion, Priya is free to browse normally.
 
 **What the evaluator should see:** The system remembered what Priya learned yesterday and tested whether it stuck. The recall didn't repeat the exact quiz question. The interval adjusted based on performance. This is spaced repetition integrated into the product, not bolted on. The right panel shows the queue mechanics: how recalls were ranked, why this question was chosen, how the interval changed.
+
+---
+
+*Next: [Design Decisions](08-design-decisions.md)*

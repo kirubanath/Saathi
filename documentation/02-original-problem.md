@@ -42,3 +42,7 @@ The assignment is focused and clear. But as I dug into Seekho's business model, 
 My assumption is that the forgetting problem the assignment highlights is part of a bigger pattern: learners likely struggle not just with individual lessons, but with piecing together knowledge across videos, staying motivated, and seeing their own progress. So rather than optimizing narrowly for post-video recall, I scoped my response to address the full learning journey.
 
 That's how I arrived at Saathi. It's my interpretation of what "AI revision coach" could become if we extended it to cover the learner's entire experience. The detailed reasoning is in [03-ai-vision.md](03-ai-vision.md) and [04-scoped-problem.md](04-scoped-problem.md).
+
+---
+
+*Next: [AI Vision](03-ai-vision.md)*

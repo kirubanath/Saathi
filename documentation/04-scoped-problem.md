@@ -49,3 +49,7 @@ Everything else in the larger Saathi vision (conversational mode, skill trees, p
 ## Success Criterion
 
 The prototype should feel like this is a learning system that knows who it is talking to.
+
+---
+
+*Next: [Solution Overview](05-solution-overview.md)*

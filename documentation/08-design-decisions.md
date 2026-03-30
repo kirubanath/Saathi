@@ -193,3 +193,7 @@ The intent is that every prototype-to-production swap is one line in a config fi
 **IS-to-AS conversion is passive.** The classifier detects user type from behavior but does not actively move IS users toward AS. The adjacent 15% recommendation pool is the only nudge. A more explicit conversion model that tracks how close an IS user is to the AS threshold and surfaces the right content to push them over it is a natural next step.
 
 **No concept completion state.** There is no notion of finishing a topic. A user whose score reaches 0.9 on a concept still receives quiz questions and recommendations for it. The full solution is skill trees, described in [03-ai-vision.md](03-ai-vision.md). That design is not part of this prototype.
+
+---
+
+*Back to: [README](../README.md)*
