@@ -153,7 +153,7 @@ Some categories could go either way. Finance could be utility (check this one th
 
 The IS path is deliberately low-pressure. Rahul watches a Sarkari Kaam video about linking Aadhaar, gets his answer, and Saathi says: "Got it. Here's another one people found useful." No quiz, no score. If he then watches an aspiration video, Saathi shows two IS-toned bullets and a gentle recommendation. The goal is not to scare away a user who is still deciding whether this platform is for them.
 
-Demo users: Priya (AS, Warming Up, 14 days, pre-loaded weak spots in `body_language` at 0.3 and `answering_structure` at 0.25) and Rahul (IS, New, 3 days, empty knowledge state).
+Demo users: Priya (AS, Warming Up, 14 days, pre-loaded weak spots in `body_language` at 0.3 and `answering_structure` at 0.25, `voice_modulation` at 0.7) and Rahul (IS, New, 3 days, empty knowledge state).
 
 ---
 
@@ -665,26 +665,4 @@ Together they demonstrate how the same video produces a different experience dep
 
 ## Limitations
 
-**1. The system always targets weakness.**
-
-Every recap, quiz, and recommendation is pointed at weak spots. This is right for learning velocity but will feel exhausting over time. Real learning systems mix challenge with consolidation. A better approach would occasionally serve easier questions on strong concepts and recommend content the user is likely to enjoy, not just content they need.
-
-**2. The concept taxonomy takes time to scale across categories.**
-
-Each skill-learning category needs a concept breakdown authored and reviewed before the pipeline can run. The process is LLM-assisted (the LLM proposes the breakdown) but human review is required before it goes live. Sub-skills also collapse into a single score: body language, for example, folds together eye contact, posture, and gestures. For the prototype with 4 categories this is fine. Across Seekho's full catalog of 40 categories, the review bottleneck becomes the constraint.
-
-**3. Recall questions are scoped to watched videos, not the concept itself.**
-
-Questions are generated from specific video transcripts. If a user has only watched one video covering a concept, the recall pool is limited to that video's questions. Even with multiple questions per difficulty level, a small pool means repetition. The pool only grows as the user watches more videos that cover the concept. Concept cards (short authored descriptions per concept, independent of any video) would solve this by providing a stable generation input for recall questions regardless of watch history.
-
-**4. Goal completion is out of scope for this prototype.**
-
-An AS user who achieves their goal has no way to signal it. The system will keep recommending the same category indefinitely. This is a known gap. The full solution is skill trees, described in [03-ai-vision.md](03-ai-vision.md). That design is not part of this prototype.
-
-**5. There is no feedback loop from user behavior back to the content layer.**
-
-All preprocessing artifacts (concept coverage scores, question difficulty bands, content type labels, category assignments) are set at ingestion and never updated. They reflect editorial judgment at the time a video is processed, not what actually happens when users engage with it.
-
-In practice these artifacts drift. A video tagged as having 0.9 coverage of `body_language` may consistently produce low quiz scores on that concept, which means the coverage score is wrong. A question labeled easy may have a 30% success rate, which means it is medium or hard. A video labeled utility may drive consistent aspiration behavior, suggesting the content type label is wrong.
-
-The signals to correct all of this already exist: quiz accuracy per concept per video, recall performance, watch completion rates, and recommendation acceptance. What is missing is a pipeline that aggregates those signals and feeds them back into the concept profiles, difficulty calibrations, and content metadata. This is the most important missing piece for a production system, because every part of the pipeline relies on the accuracy of these artifacts.
+For known limitations and design tradeoffs, see [08-design-decisions.md](08-design-decisions.md).

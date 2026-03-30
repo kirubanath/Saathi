@@ -1,5 +1,7 @@
 # Saathi: Solution Summary
 
+> Saathi is a stateful learning companion for Seekho that closes the loop after every video. It classifies users by type and learning maturity, targets their weakest concepts, runs a personalized quiz, and schedules spaced recalls. All LLM work happens offline at ingestion. Runtime is deterministic scoring and selection, no LLM calls.
+
 This is the high-level summary of my thinking and proposal. Each section maps to a detailed doc. Read this first, then go deeper where needed.
 
 ---
@@ -42,6 +44,33 @@ Seekho currently has Coach, which appears to be stateless, generic, and reactive
 
 ---
 
+## What Is Different
+
+**vs. chatbots and conversational AI**
+- Saathi does not wait for the user to ask a question
+- The system initiates the learning interaction based on what it knows about the user
+- There is no open-ended dialogue and no LLM generating responses at runtime
+
+**vs. generic quiz systems**
+- Questions are not generic to the video, they are selected based on this user's weakest concepts in this category
+- Difficulty adapts to the user's current score per concept, not a global difficulty setting
+- The quiz result updates a persistent knowledge model that changes future behavior
+
+**vs. recommendation systems**
+- Recommendations are not based on what similar users watched or content similarity
+- They are scored against this user's current knowledge gaps
+- The goal is learning advancement, not watch time
+
+---
+
+## What This Is NOT
+
+- Not a chatbot. No conversation, no open-ended input, no generative responses at runtime.
+- Not an LLM wrapper. The LLM runs once per video at ingestion. Users never trigger it.
+- Not gamification. No points, no streaks, no leaderboards. Progress is shown through actual concept scores.
+
+---
+
 ## 4. What This Prototype Builds
 
 *Full detail: [documentation/04-scoped-problem.md](documentation/04-scoped-problem.md)*
@@ -49,6 +78,15 @@ Seekho currently has Coach, which appears to be stateless, generic, and reactive
 The proactive learning loop: watch a video, classify the user, deliver a personalized recap, run a quiz, update knowledge state, show a progress update, recommend the next video, schedule recall. The loop is closed and every interaction makes the system smarter.
 
 Design decisions: classify before acting, target weak concepts not generic summaries, keep everything under two minutes, no leaderboards, no pressure on new users.
+
+---
+
+## Why This Matters for Seekho
+
+- **Retention.** Aspiration Seekers drop off when progress is not visible. Saathi makes progress visible after every session. The recall loop gives users a concrete reason to return.
+- **IS to AS conversion.** Every IS user is a potential AS user. The adjacent recommendation pool surfaces aspiration content to IS users without pressure. The system tracks engagement signals to detect when conversion is happening.
+- **No content changes required.** Saathi runs entirely on existing videos and transcripts. Seekho does not need to reshoot, re-edit, or re-categorize anything.
+- **Learning behavior data.** Watch behavior tells you what users clicked. Learning behavior tells you what they actually retained, which concepts they struggle with, and what brings them back. That data does not exist anywhere else and compounds with scale.
 
 ---
 
@@ -90,21 +128,9 @@ When a user opens the app, two checks run before normal browsing begins. If pend
 
 ---
 
-## 6. The Demo
+## 6. Architecture
 
-*Full detail: [documentation/06-demo-overview.md](documentation/06-demo-overview.md)*
-
-Streamlit app, two panels. Left shows what the learner sees. Right shows what the system is thinking. Two users: Priya (AS, weak spots pre-loaded) and Rahul (IS, empty state). Same video, completely different experience.
-
-Step 0 runs first: the preprocessing worker runs on the demo transcript, generating concept profiles, IS and AS recap bullets per concept, and questions per concept and difficulty. This is where the only LLM calls happen. The right panel shows the LLM being called, the outputs, and the stored artifacts. The four journeys that follow make no LLM calls.
-
-Four journeys: (1) Priya's full loop, showing how the pipeline selects and scores from pre-generated artifacts. (2) Rahul on the same video, classifier suppresses the loop, IS bullets and warm nudge only. (3) Priya follows the recommendation and watches video 2, everything adapts because her knowledge state changed. (4) Priya returns the next day, recalls surface first, spaced repetition in action. Journey 3 is the key one. It proves the system gets smarter with each interaction, not just that it works once.
-
----
-
-## 7. Architecture
-
-*Full detail: [documentation/07-architecture.md](documentation/07-architecture.md)*
+*Full detail: [documentation/06-architecture.md](documentation/06-architecture.md)*
 
 The system has three distinct phases, each with its own diagram in the architecture doc.
 
@@ -124,8 +150,22 @@ The system has three distinct phases, each with its own diagram in the architect
 
 ---
 
-## 8. Design and Implementation
+## 7. The Demo
 
-*Full detail: [documentation/08-design-document.md](documentation/08-design-document.md)*
+*Full detail: [documentation/07-demo-overview.md](documentation/07-demo-overview.md)*
 
-*To be completed.*
+Streamlit app, two panels. Left shows what the learner sees. Right shows what the system is thinking. Two users: Priya (AS, weak spots pre-loaded) and Rahul (IS, empty state). Same video, completely different experience.
+
+What the demo proves: system behavior changes based on user state not content alone, no LLM calls happen in the interaction path, the learning loop compounds across sessions, and recommendations are driven by knowledge gaps not content similarity.
+
+Step 0 runs first: the preprocessing worker runs on the demo transcript, generating concept profiles, IS and AS recap bullets per concept, and questions per concept and difficulty. This is where the only LLM calls happen. The right panel shows the LLM being called, the outputs, and the stored artifacts. The four journeys that follow make no LLM calls.
+
+Four journeys: (1) Priya's full loop, showing how the pipeline selects and scores from pre-generated artifacts. (2) Rahul on the same video, a counterfactual proof: same input, different state, different output. The classifier suppresses the full loop and Rahul gets IS bullets and a warm nudge only. (3) Priya follows the recommendation and watches video 2, everything adapts because her knowledge state changed. (4) Priya returns the next day, recalls surface first, spaced repetition in action. Journey 3 is the key one. It proves the system gets smarter with each interaction, not just that it works once.
+
+---
+
+## 8. Design Decisions
+
+*Full detail: [documentation/08-design-decisions.md](documentation/08-design-decisions.md)*
+
+The key decisions and their reasoning: why all LLM calls are offline, why EMA uses separate alphas for quiz and recall, why the taxonomy is fixed at 4-5 concepts per category, why recall scheduling uses simple intervals over SM-2, why the user state classifier is rule-based, and why the quiz splits into two API calls. Known limitations and future directions are covered in the final section.

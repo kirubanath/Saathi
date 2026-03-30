@@ -6,6 +6,13 @@ This demo showcases the proactive learning loop. It doesn't cover conversational
 
 Is this system making decisions based on who the user is, or is it just calling an LLM?
 
+## What This Demo Proves
+
+- System behavior changes based on user state, not content alone
+- No LLM calls happen in the runtime path
+- The learning loop compounds across sessions
+- Recommendations are driven by knowledge gaps, not content similarity
+
 ## Format
 
 Streamlit app with two panels side by side.
@@ -68,6 +75,8 @@ Each journey runs independently. The evaluator selects a journey from the demo, 
 ### Journey 2: Same Video, Different User (Rahul)
 
 **What it proves:** The classifier is real. Content type and user state change the entire experience. Two users watching the same video get completely different responses.
+
+**Counterfactual proof.** Same input. Different state. Different output. This is how you verify the system is making real decisions, not following a static path.
 
 **Video:** Same video as Journey 1.
 

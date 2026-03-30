@@ -26,9 +26,9 @@ All documentation lives in [`documentation/`](documentation/). Start with the in
 | 03  | [AI Vision](documentation/03-ai-vision.md)                 | My hypotheses, the opportunity, and what Saathi is as the answer |
 | 04  | [Scoped Problem](documentation/04-scoped-problem.md)       | What the prototype builds: inputs, constraints, scope        |
 | 05  | [Solution Overview](documentation/05-solution-overview.md) | Three phases: preprocessing, session start, per-video pipeline. Components, formulas, data structures, metrics. |
-| 06  | [Demo Overview](documentation/06-demo-overview.md)         | Demo format, users, preprocessing step, and four journeys    |
-| 07  | [Architecture](documentation/07-architecture.md)           | Three-phase system design with diagrams. FastAPI, SQLite, MinIO for prototype. Production scaling, LLM layer, and why the interaction path has no LLM calls. |
-| 08  | [Design Document](documentation/08-design-document.md)     | Implementation plan and build order                          |
+| 06  | [Architecture](documentation/06-architecture.md)           | Three-phase system design with diagrams. API endpoints, FastAPI, SQLite, MinIO for prototype. Production scaling, LLM layer, and why the interaction path has no LLM calls. |
+| 07  | [Demo Overview](documentation/07-demo-overview.md)         | What the demo proves, format, users, preprocessing step, and four journeys including a counterfactual proof |
+| 08  | [Design Decisions](documentation/08-design-decisions.md)   | Why the system is designed this way. Key decisions, tradeoffs, alternatives rejected, and known limitations. |
 
 ## Project Structure
 
@@ -43,9 +43,9 @@ All documentation lives in [`documentation/`](documentation/). Start with the in
 │   ├── 03-ai-vision.md
 │   ├── 04-scoped-problem.md
 │   ├── 05-solution-overview.md
-│   ├── 06-demo-overview.md
-│   ├── 07-architecture.md
-│   └── 08-design-document.md
+│   ├── 06-architecture.md
+│   ├── 07-demo-overview.md
+│   └── 08-design-decisions.md
 ├── data/                   # Taxonomy, videos, seed data for SQLite and MinIO
 │   └── transcripts/        # Video transcripts
 ├── src/saathi/             # Python source code

@@ -124,6 +124,35 @@ flowchart TD
 
 ---
 
+## API Endpoints
+
+FastAPI exposes five endpoints. They map directly to the three system phases.
+
+**Session Start**
+
+`POST /session/start`
+Body: `{ user_id }`. Reads the user's recall queue from the database, filters by eligibility, ranks by priority, and returns the top 3-5 due recall entries. If nothing is due, returns an empty list and the client proceeds to normal browsing.
+
+`POST /recall/answer`
+Body: `{ user_id, recall_entry_id, answer_index }`. Passes the answer through the Response Evaluator, updates the knowledge state with recall alpha (0.15), and recalculates the recall interval. Returns whether the answer was correct and the updated concept score.
+
+**Per-Video Learning Loop**
+
+The loop is two calls because the quiz is interactive. The first call delivers the recap and quiz questions. The second call submits the answers.
+
+`POST /video/complete`
+Body: `{ user_id, video_id }`. Fires at 80% watch completion. Runs the User State Classifier, Recap Engine, and Quiz Engine in sequence. Returns the user's classified state, the selected recap bullets, and the quiz questions (including correct indices, which the client holds until the user submits).
+
+`POST /quiz/submit`
+Body: `{ user_id, video_id, answers: [{ concept, answer_index }] }`. Passes answers through the Response Evaluator, updates the knowledge state, writes the watch history entry, schedules recalls for quizzed concepts, and runs the Recommendation Engine. Returns the progress update and the recommended next video.
+
+**Preprocessing**
+
+`POST /admin/preprocess`
+Body: `{ video_id, transcript }`. Runs the full preprocessing worker: concept extraction, recap generation, question generation. Writes all artifacts to object storage. This endpoint exists for the prototype only, as a way to trigger preprocessing manually before the demo. In production this is replaced by the async job queue.
+
+---
+
 ## Technology Choices
 
 | Layer | Prototype | Production |
