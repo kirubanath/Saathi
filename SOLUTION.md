@@ -47,27 +47,26 @@ Seekho currently has Coach, which appears to be stateless, generic, and reactive
 ## What Is Different
 
 **vs. chatbots and conversational AI**
-- Saathi does not wait for the user to ask a question
-- The system initiates the learning interaction based on what it knows about the user
-- There is no open-ended dialogue and no LLM generating responses at runtime
+- Saathi initiates the learning interaction. It does not wait for the user to ask.
+- Before saying anything, the system knows who the user is: their type, their maturity, their concept scores, their overdue recalls.
+- The intelligence is the knowledge model, not the LLM. Even in conversational mode, the LLM generates language. What it says, when, and why is driven by a persistent model of the user built across every session.
 
 **vs. generic quiz systems**
-- Questions are not generic to the video, they are selected based on this user's weakest concepts in this category
-- Difficulty adapts to the user's current score per concept, not a global difficulty setting
-- The quiz result updates a persistent knowledge model that changes future behavior
+- Questions are selected based on this user's weakest concepts in this category, not the video's general topic.
+- Difficulty adapts to the user's current score per concept, not a global difficulty setting.
+- The quiz result updates a persistent knowledge model that changes every future interaction.
 
 **vs. recommendation systems**
-- Recommendations are not based on what similar users watched or content similarity
-- They are scored against this user's current knowledge gaps
-- The goal is learning advancement, not watch time
+- Recommendations are scored against this user's current knowledge gaps, not content similarity or collaborative filtering.
+- The goal is learning advancement, not watch time.
 
 ---
 
 ## What This Is NOT
 
-- Not a chatbot. No conversation, no open-ended input, no generative responses at runtime.
-- Not an LLM wrapper. The LLM runs once per video at ingestion. Users never trigger it.
-- Not gamification. No points, no streaks, no leaderboards. Progress is shown through actual concept scores.
+- Not a generic chatbot. Saathi includes conversational mode in the full vision, but the intelligence driving it is a persistent knowledge model, not a stateless prompt. A chatbot reacts to what the user says. Saathi acts on what it knows about the user.
+- Not an LLM wrapper. The LLM is a content generation tool used at ingestion. The engine that classifies users, scores knowledge, targets weak concepts, and schedules recalls is deterministic logic running on a live knowledge state.
+- Not gamification. No points, no streaks, no leaderboards. Progress is shown through actual concept score movement.
 
 ---
 
