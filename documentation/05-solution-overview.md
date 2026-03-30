@@ -296,7 +296,13 @@ At the end of each video, the user sees at most two recommendation slots.
 
 **Aspiration videos**
 
-The pool is built from series representatives, not individual videos. For each series in the catalog, the representative is the next unwatched episode: episode 1 if the user has never started the series, the next episode after the last watched if they are mid-series, and excluded entirely if the series is complete. This gives one candidate per series in the pool.
+The pool is built from series representatives, not individual videos. Each series contributes at most one candidate, determined by the user's watch status for that series:
+
+- Never started: episode 1, no penalty applied
+- Mid-series: the next unwatched episode, no penalty applied (the user has never seen it)
+- Completed: episode 1 re-enters the pool as a revisit candidate, with the revisit penalty applied
+
+Completed series are not excluded for aspiration content. A series the user finished long ago with poor quiz performance is genuinely useful to surface again. The revisit penalty handles suppression naturally.
 
 Candidate pool:
 
@@ -324,14 +330,16 @@ For categories the user has not engaged with, `assumed_score[c] = 0.5` (neutral 
 
 Relevance score: `relevance = sum(concept_profile[c] x gap[c])`
 
-For already-watched videos, a revisit penalty is applied:
+The revisit penalty applies only to completed series representatives (episode 1 re-entries). Mid-series and never-started representatives are always unwatched episodes and receive no penalty.
+
+For a completed series, the penalty uses the average quiz score across all episodes in the series and time decay from the date the last episode was watched:
 
 ```
-final_score = relevance x (1 - quiz_score_at_watch) x time_decay(days)
+final_score = relevance x (1 - avg_series_quiz_score) x time_decay(days_since_completion)
 time_decay(d) = 1 - exp(-d/30)
 ```
 
-A video the user did well on gets heavily suppressed. A video the user struggled with a month ago and still hasn't mastered scores high. If the quiz was skipped, `quiz_score_at_watch = 0.5` (moderate suppression). For new videos, `final_score = relevance` with no penalty.
+A series the user just completed with high scores is heavily suppressed. A series completed long ago with poor quiz performance scores high and resurfaces naturally. If quizzes were skipped across the series, `avg_series_quiz_score = 0.5` (moderate suppression). For never-started and mid-series representatives, `final_score = relevance` with no penalty.
 
 **Sampling:**
 
@@ -343,7 +351,7 @@ Temperature by user state: AS Established = 0.3 (sharp targeting), AS Warming Up
 
 **Entertainment and utility videos**
 
-No concept taxonomy exists for these content types, so gap scoring is not applicable. A simplified distribution is used instead. The same series representative logic applies: one video per series in the pool, which is the next unwatched episode (episode 1 if the series was never started, the next episode after the last watched if mid-series, excluded if complete). This ensures users are never dropped mid-series and the pool stays fresh as they progress.
+No concept taxonomy exists for these content types, so gap scoring is not applicable. A simplified distribution is used instead. Series representatives follow the same never-started and mid-series logic as aspiration, but completed series are excluded from the pool entirely. There is no knowledge state to revisit and no learning value in re-surfacing finished entertainment or utility series.
 
 For entertainment:
 

@@ -100,7 +100,11 @@ The recommendation engine always outputs at most two slots, not a single video.
 
 For aspiration content, gap-based scoring is the right fit. The system has a concept taxonomy, per-user knowledge scores, and a clear learning objective. Scoring on knowledge gaps (rather than content similarity or collaborative filtering) keeps the recommendation tied to what the user needs to learn, not what similar users watched.
 
-The pool is built from series representatives rather than individual videos. Each series contributes exactly one candidate: the next unwatched episode (episode 1 if never started, the next episode after the last watched if mid-series, excluded if complete). Scoring is applied to these representatives. The candidate pool then splits 80/15/5: 80% of series representatives from the same category, 15% from adjacent categories via an editorial adjacency map, and 5% random. The adjacent 15% is the mechanism by which IS users get exposure to aspiration content without pressure.
+The pool is built from series representatives rather than individual videos. Each series contributes one candidate based on watch status: episode 1 if never started (no penalty), the next unwatched episode if mid-series (no penalty, it is always a new video), or episode 1 as a revisit candidate if the series is complete (revisit penalty applied). Completed aspiration series are not excluded. A series the user finished with poor quiz performance is genuinely worth surfacing again, and the revisit penalty handles suppression naturally.
+
+The revisit penalty for completed series uses the average quiz score across all episodes and time decay from when the last episode was watched: `final_score = relevance x (1 - avg_series_quiz_score) x time_decay(days_since_completion)`. A recently completed, well-scored series is suppressed. An old, poorly-scored series resurfaces.
+
+The candidate pool splits 80/15/5: 80% of series representatives from the same category, 15% from adjacent categories via an editorial adjacency map, and 5% random. The adjacent 15% is the mechanism by which IS users get exposure to aspiration content without pressure.
 
 Softmax sampling over greedy ranking prevents the system from surfacing the same video every time the user's knowledge state is stable. Temperature varies by user state:
 
@@ -110,7 +114,7 @@ Softmax sampling over greedy ranking prevents the system from surfacing the same
 - IS New: 1.2 (broader exploration, the user is still forming preferences)
 - First session: 1.5
 
-For entertainment and utility content, gap scoring is not applicable. There is no concept taxonomy for these types and the user is not building a knowledge model. A simplified distribution is used instead. The same series representative logic applies: one video per series in the pool, which is the next unwatched episode. The selection unit within each bucket is always a series representative, never a random mid-series video.
+For entertainment and utility content, gap scoring is not applicable. There is no concept taxonomy for these types and the user is not building a knowledge model. A simplified distribution is used instead. Completed series are excluded from the pool entirely for these content types. There is no knowledge state to revisit and no learning value in re-surfacing a finished entertainment or utility series. Never-started and mid-series representatives follow the same logic as aspiration.
 
 Entertainment distribution: 40% same entertainment category, 30% other entertainment categories, 30% aspiration content.
 
