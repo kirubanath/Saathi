@@ -64,7 +64,7 @@ The system runs in three phases. All LLM work happens in preprocessing. The sess
 
 **2. Recap Bullet Generator:** For each concept in the profile, generates two recap bullets: one IS-flavored (low pressure, immediate usefulness) and one AS-flavored (richer, frames the concept as part of ongoing skill development). Both stored per concept. At interaction time, the system selects which version to show based on user type.
 
-**3. Question Generator:** For each concept, generates questions at easy, medium, and hard difficulty. Multiple questions per level to support rotation. Stored in the question bank, used for both the in-session quiz and future recall.
+**3. Question Generator:** For each concept, generates questions at easy, medium, and hard difficulty. Multiple questions per level to support rotation. Stored in the video artifacts alongside the concept profile and recap bullets, used for both the in-session quiz and future recall.
 
 **Session Start (once per session, before browsing):**
 
@@ -96,7 +96,7 @@ When a user opens the app, two checks run before normal browsing begins. If pend
 
 Streamlit app, two panels. Left shows what the learner sees. Right shows what the system is thinking. Two users: Priya (AS, weak spots pre-loaded) and Rahul (IS, empty state). Same video, completely different experience.
 
-Step 0 runs first: the preprocessing pipeline runs on the demo transcript, generating concept profiles, IS and AS recap bullets per concept, and questions per concept and difficulty. This is where the only LLM calls happen. The right panel shows the LLM being called, the outputs, and the stored artifacts. The four journeys that follow make no LLM calls.
+Step 0 runs first: the preprocessing worker runs on the demo transcript, generating concept profiles, IS and AS recap bullets per concept, and questions per concept and difficulty. This is where the only LLM calls happen. The right panel shows the LLM being called, the outputs, and the stored artifacts. The four journeys that follow make no LLM calls.
 
 Four journeys: (1) Priya's full loop, showing how the pipeline selects and scores from pre-generated artifacts. (2) Rahul on the same video, classifier suppresses the loop, IS bullets and warm nudge only. (3) Priya follows the recommendation and watches video 2, everything adapts because her knowledge state changed. (4) Priya returns the next day, recalls surface first, spaced repetition in action. Journey 3 is the key one. It proves the system gets smarter with each interaction, not just that it works once.
 

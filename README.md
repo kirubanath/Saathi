@@ -46,7 +46,7 @@ All documentation lives in [`documentation/`](documentation/). Start with the in
 │   ├── 06-demo-overview.md
 │   ├── 07-architecture.md
 │   └── 08-design-document.md
-├── data/                   # Taxonomy, users, videos, question bank
+├── data/                   # Taxonomy, videos, seed data for SQLite and MinIO
 │   └── transcripts/        # Video transcripts
 ├── src/saathi/             # Python source code
 ├── demo/                   # Streamlit demo app

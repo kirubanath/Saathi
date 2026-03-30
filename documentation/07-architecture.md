@@ -164,8 +164,8 @@ The LLM layer is only called during preprocessing. No component in the session s
 | **Preprocessing Worker** | Transcript | Object storage | Manual Python script | Async worker triggered via job queue |
 | **User State Classifier** | User database | Nothing (passed in memory) | FastAPI reads SQLite | FastAPI reads relational database |
 | **Recap Engine** | Object storage, user database | Nothing (passed in memory) | FastAPI reads MinIO and SQLite | FastAPI reads object storage and database |
-| **Quiz Engine** | Object storage, user database | Nothing (passed in memory) | FastAPI reads MinIO and SQLite | FastAPI reads object storage and database |
-| **Response Evaluator** | Quiz or recall answers, correct indices | Nothing (passed in memory) | Fully deterministic | Identical |
+| **Quiz Engine** | Object storage (question objects including correct indices), user database | Nothing (passed in memory) | FastAPI reads MinIO and SQLite | FastAPI reads object storage and database |
+| **Response Evaluator** | User answer and correct index (both passed in memory from Quiz Engine) | Nothing (passed in memory) | Fully deterministic | Identical |
 | **Knowledge State Updater** | Quiz or recall results, current scores | User database | FastAPI writes to SQLite | FastAPI writes to relational database |
 | **Progress Update** | Before and after knowledge scores | Nothing (rendered to UI) | FastAPI returns string, Streamlit renders | FastAPI returns string, mobile client renders |
 | **Recommendation Engine** | Object storage, user database | Nothing (passed in memory) | FastAPI reads MinIO and SQLite | FastAPI reads object storage and database |

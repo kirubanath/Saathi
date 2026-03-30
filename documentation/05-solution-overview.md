@@ -234,7 +234,9 @@ Maximum of 3 questions per quiz session, keeping the total interaction under 2 m
 
 #### 4. Response Evaluator
 
-Compares the selected answer index against the stored correct index. Returns 1 (correct) or 0 (wrong) per question. Fully deterministic, no LLM.
+Compares the user's selected answer index against the correct index. Returns 1 (correct) or 0 (wrong) per question. Fully deterministic, no LLM.
+
+The correct index is stored inside each question object in the video dict, alongside the question text and options. The Quiz Engine reads the full question object from object storage and passes it to the Response Evaluator in memory. The evaluator does not make a separate storage read.
 
 Skipped questions are scored as 0. The system cannot assume knowledge from silence. If the user skips the entire quiz, no quiz scores are recorded, the knowledge state receives only the passive watch bump, and no recall is scheduled for those concepts.
 
