@@ -29,6 +29,7 @@ All documentation lives in [`documentation/`](documentation/). Start with the in
 | 06  | [Architecture](documentation/06-architecture.md)           | Three-phase system design with diagrams. API endpoints, FastAPI, SQLite, MinIO for prototype. Production scaling, LLM layer, and why the interaction path has no LLM calls. |
 | 07  | [Demo Overview](documentation/07-demo-overview.md)         | What the demo proves, format, users, preprocessing step, and four journeys including a counterfactual proof |
 | 08  | [Design Decisions](documentation/08-design-decisions.md)   | Why the system is designed this way. Key decisions, tradeoffs, alternatives rejected, and known limitations. |
+| 09  | [Data Verification](documentation/09-data-verification.md) | How to inspect the mock dataset: SQLite queries, expected seed values, MinIO artifact checks. |
 
 ## Project Structure
 

@@ -22,6 +22,8 @@ Start with SOLUTION.md in the project root for a concise summary of the full pro
 
 **[08-design-decisions.md](08-design-decisions.md)** - Why the system is designed this way. Key decisions with reasoning and tradeoffs: LLM offline strategy, EMA alpha choices, fixed taxonomy, recall scheduling, rule-based classifier, two-call quiz design, and known limitations.
 
+**[09-data-verification.md](09-data-verification.md)** - Developer reference for inspecting the mock dataset. SQLite queries for users, videos, watch history, and recall queue. Expected seed values for both users. How to verify MinIO artifacts after preprocessing and confirm utility and entertainment videos have no artifacts.
+
 ---
 
 *[Background →](01-background.md)*
