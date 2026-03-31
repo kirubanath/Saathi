@@ -17,6 +17,7 @@ import socket
 import subprocess
 import sys
 import time
+import webbrowser
 
 import click
 
@@ -104,6 +105,17 @@ def _wait_for_fastapi(port: int = DEFAULT_API_PORT, max_wait: int = 15):
         time.sleep(1)
     click.echo(" timeout!")
     click.secho("  FastAPI did not become ready.", fg="yellow")
+
+
+def _wait_for_port(host: str, port: int, max_wait: int = 15) -> bool:
+    """Wait until a TCP port is reachable."""
+    for _ in range(max_wait):
+        try:
+            with socket.create_connection((host, port), timeout=1):
+                return True
+        except OSError:
+            time.sleep(1)
+    return False
 
 
 def _ensure_minio():
@@ -205,6 +217,12 @@ def demo():
         stderr=subprocess.DEVNULL,
     )
     click.echo(f"  Demo running at http://localhost:{st_port}")
+    if _wait_for_port("localhost", st_port, max_wait=15):
+        demo_url = f"http://localhost:{st_port}"
+        webbrowser.open_new_tab(demo_url)
+        click.echo(f"  Opened browser at {demo_url}")
+    else:
+        click.secho("  Streamlit started but browser auto-open timed out.", fg="yellow")
     click.echo("  Press Ctrl+C to stop.\n")
 
     def _kill_proc(proc):

@@ -65,11 +65,14 @@ st.markdown("""
 
     .stButton > button {
         border-radius: 8px;
-        padding: 8px 32px;
+        padding: 8px 16px;
         font-weight: 600;
         font-size: 0.82rem;
         min-height: 42px;
-        white-space: nowrap;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        line-height: 1.2;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;

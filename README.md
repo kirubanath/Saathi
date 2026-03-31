@@ -16,7 +16,15 @@ Saathi turns passive video watching into an active, personalized learning loop. 
 - **Docker** (for MinIO object storage)
 - **Anthropic API key** (only needed if you want to re-run LLM preprocessing; the demo ships with pre-generated artifacts and works without one)
 
-### Setup
+### Setup (recommended if you have uv)
+
+```bash
+uv sync
+source .venv/bin/activate
+cp .env.example .env
+```
+
+### Setup (Alternative)
 
 ```bash
 # Clone and enter the project
@@ -24,6 +32,7 @@ git clone <repo-url> && cd Saathi
 
 # Create and activate virtual environment
 python -m venv .venv
+
 source .venv/bin/activate
 
 # Install the project (editable mode)
