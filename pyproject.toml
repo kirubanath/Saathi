@@ -12,10 +12,6 @@ dependencies = [
     "streamlit>=1.55.0",
 ]
 
-[project.scripts]
-saathi      = "saathi.cli:cli"          # terminal: saathi run <name>, saathi create-user, etc.
-saathi-demo = "saathi.demo_entry:main"  # launches Streamlit demo
-
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

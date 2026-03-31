@@ -33,6 +33,10 @@ Each journey is a staged scenario: a specific user watching a specific video, wi
 
 The sidebar has a Reset button. Clicking it re-seeds both users and clears any state written during the current journey. This is how the presenter moves between journeys cleanly.
 
+Each journey has a pre-start screen before the journey begins. For aspiration journeys (1, 2, 3), the pre-start screen shows a **Preprocess Current Video** button alongside a **Start Journey** button. Clicking Preprocess runs the preprocessing pipeline live for that journey's video, showing the transcript load, LLM calls, and artifact writes in the right panel. Clicking Start Journey begins the loop without preprocessing. Since all artifacts are pre-seeded, the journey works either way. This means the demo runs without an API key if preprocessing is never triggered. Journey 4 (recall) and Journey 5 (utility) have no preprocessing button: Journey 4 has no current video, and Journey 5 demonstrates the content type gate by having nothing to preprocess.
+
+Each journey ends naturally when the presenter clicks one of the two recommendation slots. Journey 4 ends with a **Continue to Browse** button after recalls are complete.
+
 You can keep going after any journey. The system does not stop. All five journeys together form the complete demo narrative. After the five journeys, an evaluator can click freely and the system keeps responding correctly. The journeys are sufficient to prove the system works, but they are not a ceiling.
 
 Journey 3 branches. Priya receives two recommendation slots after Journey 1 (Slot 1: next in the same series she just watched, Slot 2: engine pick). The presenter clicks one. The demo shows that path in full. The other path can be described verbally or shown with a reset.
@@ -47,25 +51,19 @@ Slot 1 is deterministic and will always return the same result for the same user
 
 **Rahul (Information Seeker):** New, 3 days, 2 aspiration videos watched (1 Career & Jobs, 1 English Speaking), no single-category concentration. Classified IS via the new-user default (Step 3: fewer than 5 non-entertainment videos total). Empty knowledge state, no recall entries.
 
-## Step 0: Video Preprocessing
+## Video Preprocessing
 
-**What it shows:** Where all LLM work happens. Only aspiration videos go through this pipeline. Utility and entertainment videos have metadata only. The journeys make no LLM calls.
+All aspiration video artifacts are pre-generated and stored in MinIO before the demo starts. The journeys never require preprocessing to run live.
 
-**Video:** vid_001 (Body Language in Interviews, Career & Jobs aspiration, ep 1 of the Interview Confidence series).
+At the start of each aspiration journey (1, 2, 3), the presenter can optionally click **Preprocess Current Video** to show the pipeline running live for that journey's video. The right panel shows the transcript, the LLM calls, the output concept profile, IS and AS recap bullets per concept, and questions per concept and difficulty, and confirms what was written to MinIO. The same artifacts the journeys use are what gets written here.
 
-**Flow:**
+Only aspiration videos go through this pipeline. Utility and entertainment videos have metadata only. The journeys make no LLM calls.
 
-1. Transcript for vid_001 loads. Right panel shows the raw text.
-2. Concept extractor maps the transcript to the Career & Jobs aspiration taxonomy. Right panel shows the LLM call, the prompt, and the output concept profile: {body_language: 0.9, handling_nervousness: 0.7}. Other Career & Jobs concepts are below the 0.2 threshold for this video and are excluded.
-3. Recap bullet generator runs for each concept above threshold. For each concept, two bullets are generated: IS-flavored and AS-flavored. Right panel shows both versions side by side.
-4. Question generator runs per concept per difficulty level (easy, medium, hard). Right panel shows sample questions across concepts and difficulty levels.
-5. All artifacts are stored in MinIO. Right panel confirms what was written: concept profile, recap bullets keyed by concept and user type, questions keyed by concept and difficulty.
-
-**What the evaluator should see:** The LLM is called here, not during user interactions. Every personalized response in the four journeys is the system selecting from what was generated in this step. This pipeline only runs for aspiration videos. Utility and entertainment videos skip it entirely. The cost of running Saathi at interaction time is scoring and selection logic, not LLM inference.
+**What the evaluator should see:** The LLM is called here, not during user interactions. Every personalized response in the journeys is the system selecting from what was generated at this stage. The cost of running Saathi at interaction time is scoring and selection logic, not LLM inference.
 
 ## Five Journeys
 
-Each journey is a staged scenario. The presenter resets between journeys using the sidebar button.
+Each journey is a staged scenario. The presenter resets between journeys using the sidebar button. Journeys 1, 2, 3, and 5 end when the presenter clicks one of the two recommendation slots. Journey 4 ends with a Continue to Browse button after recalls are complete.
 
 ---
 
@@ -144,7 +142,7 @@ The demo shows Path A in full. Path B follows the same loop structure but with a
 
 **What it proves:** The habit loop works. The system brings users back and tests whether learning stuck.
 
-**Setup:** Simulated next-day return. Priya opens the app 24 hours after Journey 1.
+**Setup:** Simulated next-day return. Priya opens the app 24 hours after Journey 1. The recall entries that surface are the ones written during Journey 1, which are scheduled 18-48 hours out from that point. Journey 4 runs minutes later in the same demo session, so the pre-start screen passes a simulated timestamp of `journey_1_completion_time + 24h` to the session start call. The recall query uses this simulated time instead of wall-clock now, so the Journey 1 entries appear due. The UI shows "Simulating: 24 hours later" on the pre-start screen.
 
 **Flow:**
 
@@ -152,7 +150,7 @@ The demo shows Path A in full. Path B follows the same loop structure but with a
 2. Top recall surfaces. Left panel shows a single question on body_language, drawn from the quiz bank for videos she has already watched. Right panel shows which question ID was selected and confirms it is different from the question served in Journey 1 (the `last_question_id` field prevents back-to-back repetition).
 3. Priya answers. Response evaluator scores it. Knowledge state updater applies the recall alpha (0.15, smaller than quiz alpha of 0.3). Right panel shows the update.
 4. If correct: recall interval doubles. Next recall for body_language scheduled further out. If wrong: interval halves (min 12 hours), concept score drops slightly. Right panel shows the new schedule.
-5. Remaining recalls surface (up to the daily cap). After completion, Priya is free to browse.
+5. Remaining recalls surface (up to the daily cap). After completion, a **Continue to Browse** button ends the journey. There is no video to preprocess here and no recommendation engine run. The journey endpoint is the recall completion itself.
 
 **What the evaluator should see:** The system remembered what Priya learned yesterday and tested whether it stuck. The recall did not repeat the exact quiz question. The interval adjusted based on performance. This is the return trigger: spaced repetition integrated into the product. After Journey 4, the demo narrative is complete. The full loop has been shown: watch, classify, recap, quiz, update, recommend, return, recall. The system continues to work if you keep clicking.
 
@@ -164,6 +162,8 @@ The demo shows Path A in full. Path B follows the same loop structure but with a
 
 **Video:** vid_008, How to Get Your PAN Card (Sarkari Kaam, utility, ep 1 of Government Documents series). Rahul watches this.
 
+**Pre-start:** No Preprocess Current Video button. The absence itself demonstrates the content type gate before the journey even begins.
+
 **Flow:**
 
 1. Rahul's profile loads. Right panel shows his user state (IS, New).
@@ -174,6 +174,22 @@ The demo shows Path A in full. Path B follows the same loop structure but with a
 6. Left panel shows the result with warm nudge tone: no quiz, no progress message, just the two recommendation slots.
 
 **What the evaluator should see:** The system did not call an LLM. It did not run a quiz. It made one classification decision (utility) and then ran a bucket-based recommendation. The right panel shows the 50/30/20 distribution and how the pool was constructed from series representatives. This is the same engine doing less work, not a different path — the content type gate is a filter applied at the start of the same pipeline.
+
+---
+
+## Sandbox
+
+The Sandbox is a free-form page available alongside the five journeys in the sidebar. It is not a scripted scenario. The presenter or evaluator can select any user, any video, and any completion rate and run the full pipeline on demand.
+
+**Controls:** User dropdown (Priya, Rahul), video dropdown (all 15 videos, labelled with title and content type), completion rate slider (0.0 to 1.0), and a **Use fresh copy** toggle.
+
+**Use fresh copy on:** The pipeline runs against a temporary copy of the seed database. Changes are discarded after the run. The live database is untouched, so journeys are unaffected.
+
+**Use fresh copy off:** The pipeline runs against the live database. State persists. A warning banner is shown. This mode lets the presenter demonstrate continued state accumulation after the scripted journeys.
+
+**Output:** The same two-panel layout as the journey pages. No step-by-step flow. The full loop runs in one pass and all outputs are shown at once.
+
+The Sandbox answers the most likely evaluator question after the journeys: "What happens if I try a different combination?" The answer is live, not verbal.
 
 ---
 
