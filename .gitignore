@@ -1,0 +1,28 @@
+# Virtual environments
+.venv/
+
+# Environment variables
+.env
+
+# Python-specific
+__pycache__/
+*.pyc
+*.pyo
+.python-version
+.pytest_cache/
+
+# macOS files
+.DS_Store
+
+# Project-specific
+research/
+tasks/
+.claude/
+CLAUDE.md
+
+# Runtime databases (rebuilt from seed on reset)
+saathi.db
+
+# MinIO runtime artifacts (transient, change every start)
+minio_data/.minio.sys/
+data_dump.json
