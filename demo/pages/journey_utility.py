@@ -1,20 +1,30 @@
 """Journey 5: Utility Content Gate (Rahul + vid_008)
 
 Utility videos skip the learning loop entirely. No recap, no quiz, no recall.
+Demonstrates the content type gate.
+
+All data flows through the FastAPI server over HTTP.
 """
 
 import streamlit as st
 
-from db.base import SessionLocal
-from db.operations import get_user
-from engine.loop import run_video_complete_loop
+from demo import api_client
 
-from demo.components.user_panel import render_user_profile, render_recommendation
-from demo.components.system_panel import (
-    render_classification, render_recommendation_breakdown, render_reasoning_log,
+from demo.components.html_blocks import event_card, learner_visible_card, journey_prestart_card, step_nav, system_code_block, step_columns
+from demo.components.user_panel import (
+    render_panel_header as render_learner_header,
+    render_user_profile,
+    render_recommendation,
+    render_journey_complete,
 )
-from demo.components.state_display import render_knowledge_chart
-from demo.pages.journey_core import _extract_user_data, _extract_loop_result
+from demo.components.system_panel import (
+    render_panel_header as render_system_header,
+    render_classification,
+    render_recommendation_breakdown,
+    render_reasoning_log,
+    render_skipped_steps,
+)
+from demo.components.state_display import render_knowledge_chart, render_knowledge_json
 
 
 USER_ID = "rahul"
@@ -31,14 +41,13 @@ def _set_step(step):
 
 
 def render():
-    st.title("Journey 5: Utility Content Gate")
-    st.caption("Rahul watches vid_008 (How to Get Your PAN Card, Utility)")
-
     step = _get_step()
 
     if step == 0:
         _render_prestart()
-    elif step == 1:
+        return
+
+    if step == 1:
         _render_profile()
     elif step == 2:
         _render_video_complete()
@@ -49,9 +58,12 @@ def render():
 
 
 def _render_prestart():
-    st.markdown(
-        "No Preprocess button here. Utility videos have no concept taxonomy or LLM-generated artifacts. "
-        "This absence demonstrates the content type gate."
+    journey_prestart_card(
+        "Journey 5: Utility Content Gate",
+        "No Preprocess button — utility videos have no concept taxonomy. "
+        "The absence itself demonstrates the content type gate before "
+        "the journey even begins.",
+        "User: Rahul (IS, New) · Video: vid_008 — How to Get Your PAN Card (Utility)",
     )
 
     if st.button("Start Journey", key=f"{PREFIX}_start", type="primary"):
@@ -60,94 +72,92 @@ def _render_prestart():
 
 
 def _render_profile():
-    st.markdown("### User Profile")
-
     if f"{PREFIX}_user_data" not in st.session_state:
-        db = SessionLocal()
         try:
-            user = get_user(db, USER_ID)
-            st.session_state[f"{PREFIX}_user_data"] = _extract_user_data(user)
-        finally:
-            db.close()
+            st.session_state[f"{PREFIX}_user_data"] = api_client.get_user(USER_ID)
+        except Exception as e:
+            st.error(f"Could not reach API server: {e}")
+            return
 
     user_data = st.session_state[f"{PREFIX}_user_data"]
 
-    left, right = st.columns(2)
+    left, right = step_columns("j5_s1")
     with left:
+        render_learner_header()
         render_user_profile(user_data)
-    with right:
         render_knowledge_chart(user_data["knowledge_state"], "Current Knowledge")
+    with right:
+        render_system_header()
+        render_knowledge_json(user_data["knowledge_state"], "Raw Knowledge State")
 
-    if st.button("Next", key=f"{PREFIX}_to_step2", type="primary"):
-        _set_step(2)
-        st.rerun()
+    step_nav(PREFIX, 1, 4, _set_step)
 
 
 def _render_video_complete():
-    st.markdown("### Video Complete")
-
     if f"{PREFIX}_loop_data" not in st.session_state:
-        db = SessionLocal()
         try:
-            result = run_video_complete_loop(db, USER_ID, VIDEO_ID, 1.0)
-            st.session_state[f"{PREFIX}_loop_data"] = _extract_loop_result(result)
-        finally:
-            db.close()
+            st.session_state[f"{PREFIX}_loop_data"] = api_client.video_complete(USER_ID, VIDEO_ID, 1.0)
+        except Exception as e:
+            st.error(f"API error during video completion: {e}")
+            return
 
     loop_data = st.session_state[f"{PREFIX}_loop_data"]
 
-    left, right = st.columns(2)
+    left, right = step_columns("j5_s2")
     with left:
-        st.markdown(f"Rahul watched **How to Get Your PAN Card** (`{VIDEO_ID}`)")
-        st.markdown("Content type: **utility**. Learning loop does not fire.")
+        render_learner_header()
+        event_card("Video Watched",
+                   "How to Get Your PAN Card<br>Sarkari Kaam &middot; Utility content")
     with right:
+        render_system_header()
         render_classification(loop_data["classification"])
 
-    if st.button("Next", key=f"{PREFIX}_to_step3", type="primary"):
-        _set_step(3)
-        st.rerun()
+    step_nav(PREFIX, 2, 4, _set_step)
 
 
 def _render_skipped():
-    st.markdown("### Content Type Gate")
-
-    left, right = st.columns(2)
+    left, right = step_columns("j5_s3")
     with left:
-        st.info("Here's what to watch next.")
-        st.caption("No recap, no quiz, no recall for utility content.")
+        render_learner_header()
+        learner_visible_card("Pipeline Complete",
+                             "Learning loop skipped — utility content. Recommendations only.")
     with right:
-        steps = [
-            ("Preprocessing", "No concept taxonomy"),
+        render_system_header()
+        render_skipped_steps([
+            ("Preprocessing", "No concept taxonomy for utility content"),
             ("Watch Bump", "No knowledge state to update"),
-            ("Recap", "No concept profile"),
+            ("Recap", "No concept profile exists"),
             ("Quiz", "No questions generated"),
-            ("Recall", "No spaced repetition"),
-        ]
-        for step_name, reason in steps:
-            with st.container(border=True):
-                st.markdown(f"~~{step_name}~~ {reason}")
+            ("Recall", "No spaced repetition for utility"),
+        ])
+        system_code_block("Content Type Gate",
+                          'content_type = "utility"\n'
+                          "→ learning loop = OFF\n"
+                          "→ recommendation engine only")
 
-    if st.button("Next", key=f"{PREFIX}_to_step4", type="primary"):
-        _set_step(4)
-        st.rerun()
+    step_nav(PREFIX, 3, 4, _set_step)
 
 
 def _render_recommendation():
-    st.markdown("### Recommendations (50/30/20)")
-
     loop_data = st.session_state[f"{PREFIX}_loop_data"]
 
-    left, right = st.columns(2)
+    left, right = step_columns("j5_s4")
     with left:
+        render_learner_header()
+        st.markdown("**Recommendations — next videos:**")
         render_recommendation(loop_data.get("recommendation", {}))
-        st.success("Journey 5 Complete")
+        render_journey_complete("Utility Content Gate — Rahul + vid_008")
     with right:
+        render_system_header()
         render_recommendation_breakdown(loop_data.get("recommendation", {}))
+        system_code_block("Utility Recommendation Mix",
+                          "slot_2_distribution:\n"
+                          "  50%  same utility category\n"
+                          "  30%  other utility categories\n"
+                          "  20%  aspiration (cross-pollination)\n"
+                          "\n"
+                          "pool: series representatives (one per series)\n"
+                          "no gap scoring — bucket sampling only")
+        render_reasoning_log(loop_data.get("reasoning", []), "Full Pipeline Log")
 
-        st.markdown("##### Utility Buckets")
-        st.markdown("- **50%** same utility category")
-        st.markdown("- **30%** other utility categories")
-        st.markdown("- **20%** aspiration (cross-pollination)")
-        st.caption("No gap scoring. Pool uses series representatives.")
-
-        render_reasoning_log(loop_data.get("reasoning", []), "Full reasoning")
+    step_nav(PREFIX, 4, 4, _set_step)

@@ -15,25 +15,29 @@ Is this system making decisions based on who the user is, or is it just calling 
 
 ## Format
 
-Streamlit app with two panels side by side.
+Streamlit app with two panels side by side, accessed via top-level tabs.
 
-**Left panel:** What the learner sees. Saathi's messages, recap, quiz, progress update, recommendation. Warm and conversational.
+**Left panel:** What happens on the client side. This panel mixes two kinds of content, visually distinguished:
+- **"Learner sees this" cards** (blue border): content the learner would actually see in a production app. Recap bullets, quiz questions, progress updates, recommendation slots.
+- **Event cards** (grey border): narrative context for the evaluator. User profiles, classification context, step descriptions. These would not appear in production.
 
-**Right panel:** What the system is thinking. Content type classification, user state, knowledge state, concept profiles, scoring logic, recommendation reasoning. This panel is for evaluation only and would never appear in production.
+**Right panel:** What the system is thinking. Content type classification, user state, knowledge state, concept profiles, scoring logic, recommendation reasoning. Rendered as code/JSON blocks with orange borders. This panel is for evaluation only and would never appear in production.
+
+**Navigation:** Each journey uses tabs at the top of the page (not a sidebar). A step indicator shows progress through the journey. Back/Next buttons at each step allow the presenter to move forward and backward freely. A light/dark mode toggle and a Reset Demo button sit in the top-right area.
 
 The evaluator sees both the outcome and the reasoning behind it at the same time.
 
 ## How the Demo Works
 
-The demo is a live, working system. Every output shown is computed in real time from real API calls. Nothing is pre-recorded or mocked at interaction time.
+The demo is a live, working system. Every output shown is computed in real time from HTTP calls to the FastAPI server. Nothing is pre-recorded or mocked at interaction time. The Streamlit frontend communicates with the backend exclusively through the API layer (`demo/api_client.py` → `api/routes.py` → engine functions), showcasing the same architecture a production client would use.
 
 Seed data creates specific starting conditions before the demo begins. Priya and Rahul are pre-seeded in the database with defined knowledge states, watch histories, and recall queues. All aspiration video artifacts are pre-generated and loaded in MinIO. This setup runs once via the seed script before the demo starts.
 
 Each journey is a staged scenario: a specific user watching a specific video, with the system responding in real time. The presenter advances through steps manually. The right panel shows the system's reasoning at each step.
 
-The sidebar has a Reset button. Clicking it re-seeds both users and clears any state written during the current journey. This is how the presenter moves between journeys cleanly.
+The top-right area has a prominent red Reset Demo button. Clicking it re-seeds both users and clears any state written during the current journey. This is how the presenter moves between journeys cleanly. The light/dark mode preference is preserved across resets.
 
-Each journey has a pre-start screen before the journey begins. For aspiration journeys (1, 2, 3), the pre-start screen shows a **Preprocess Current Video** button alongside a **Start Journey** button. Clicking Preprocess runs the preprocessing pipeline live for that journey's video, showing the transcript load, LLM calls, and artifact writes in the right panel. Clicking Start Journey begins the loop without preprocessing. Since all artifacts are pre-seeded, the journey works either way. This means the demo runs without an API key if preprocessing is never triggered. Journey 4 (recall) and Journey 5 (utility) have no preprocessing button: Journey 4 has no current video, and Journey 5 demonstrates the content type gate by having nothing to preprocess.
+Each journey has a pre-start card before the journey begins. For aspiration journeys (1, 2, 3), the pre-start card shows a **Start Journey** button on the left and a **Preprocess** button on the right. Clicking Preprocess runs the preprocessing pipeline live for that journey's video, showing the transcript load, LLM calls, and artifact writes in the right panel. Clicking Start Journey begins the loop without preprocessing. Since all artifacts are pre-seeded, the journey works either way. This means the demo runs without an API key if preprocessing is never triggered. Journey 4 (recall) and Journey 5 (utility) have no preprocessing button: Journey 4 has no current video, and Journey 5 demonstrates the content type gate by having nothing to preprocess.
 
 Each journey ends naturally when the presenter clicks one of the two recommendation slots. Journey 4 ends with a **Continue to Browse** button after recalls are complete.
 
@@ -63,7 +67,7 @@ Only aspiration videos go through this pipeline. Utility and entertainment video
 
 ## Five Journeys
 
-Each journey is a staged scenario. The presenter resets between journeys using the sidebar button. Journeys 1, 2, 3, and 5 end when the presenter clicks one of the two recommendation slots. Journey 4 ends with a Continue to Browse button after recalls are complete.
+Each journey is a staged scenario. The presenter resets between journeys using the top-right Reset Demo button. Each step has Back/Next navigation so the presenter can revisit earlier steps if needed. Journeys 1, 2, 3, and 5 end at the recommendation step. Journey 4 ends after recalls are complete.
 
 ---
 
@@ -105,7 +109,7 @@ Each journey is a staged scenario. The presenter resets between journeys using t
 3. The same pre-generated concept profile loads from MinIO. Right panel shows it is identical to Priya's.
 4. Recap engine selects the top 2 IS-flavored pre-generated bullets. Right panel shows why: IS user gets the softer-toned version, 2 bullets, no quiz follows.
 5. No quiz. No knowledge state update from quiz. No recall scheduled. Right panel explicitly shows these steps being skipped and why.
-6. Recommendation engine runs. Slot 1 check: vid_001 is ep 1 of Interview Confidence and Rahul has not watched ep 2, so Slot 1 = vid_002 (next episode in the same series). Right panel shows the series lookup — same series result as Priya in Journey 1. Slot 2: IS temperature is higher, pool is explored more broadly. Left panel shows both slots with a warm nudge tone.
+6. Recommendation engine runs. Slot 1 check: vid_001 is ep 1 of Interview Confidence and Rahul has not watched ep 2, so Slot 1 = vid_002 (next episode in the same series). Right panel shows the series lookup, same series result as Priya in Journey 1. Slot 2: IS temperature is higher, pool is explored more broadly. Left panel shows both slots with a warm nudge tone.
 
 **What the evaluator should see:** Same video, same concept profile, completely different experience. Rahul is not overwhelmed. The Slot 1 result is the same as Priya's because it is a pure series lookup, not personalised by user type. The difference is in the loop: Rahul gets no quiz and no recall. The right panel makes the decision logic transparent at every step.
 
@@ -117,9 +121,9 @@ Each journey is a staged scenario. The presenter resets between journeys using t
 
 **Setup:** Continues from Journey 1 state. Priya has two recommendation slots. The presenter picks one.
 
-**Path A (Slot 1 — series continuation):** Priya watches vid_002 (Answering Questions with Structure, ep 2 of Interview Confidence). This is heavier on answering_structure and voice_modulation, exactly where her gap widened after Journey 1.
+**Path A (Slot 1, series continuation):** Priya watches vid_002 (Answering Questions with Structure, ep 2 of Interview Confidence). This is heavier on answering_structure and voice_modulation, exactly where her gap widened after Journey 1.
 
-**Path B (Slot 2 — engine pick):** Priya watches the gap-scored recommendation from Journey 1 (either vid_005 from Career Foundations or vid_006 from English Speaking). The system chose this based on her post-Journey-1 gap vector.
+**Path B (Slot 2, engine pick):** Priya watches the gap-scored recommendation from Journey 1 (either vid_005 from Career Foundations or vid_006 from English Speaking). The system chose this based on her post-Journey-1 gap vector.
 
 The demo shows Path A in full. Path B follows the same loop structure but with a different concept profile.
 
@@ -142,7 +146,7 @@ The demo shows Path A in full. Path B follows the same loop structure but with a
 
 **What it proves:** The habit loop works. The system brings users back and tests whether learning stuck.
 
-**Setup:** Simulated next-day return. Priya opens the app 24 hours after Journey 1. The recall entries that surface are the ones written during Journey 1, which are scheduled 18-48 hours out from that point. Journey 4 runs minutes later in the same demo session, so the pre-start screen passes a simulated timestamp of `journey_1_completion_time + 24h` to the session start call. The recall query uses this simulated time instead of wall-clock now, so the Journey 1 entries appear due. The UI shows "Simulating: 24 hours later" on the pre-start screen.
+**Setup:** Simulated return. Priya opens the app 48 hours after Journey 1. The recall entries that surface are the ones written during Journey 1, which are scheduled 12-48 hours out depending on the concept's score (lower scores get shorter intervals). Journey 4 runs minutes later in the same demo session, so the pre-start screen passes a simulated timestamp of `journey_1_completion_time + 48h` to the session start call. The recall query uses this simulated time instead of wall-clock now, so all Journey 1 entries appear due. The UI shows "Simulating: 48 hours later" on the pre-start screen.
 
 **Flow:**
 
@@ -173,21 +177,17 @@ The demo shows Path A in full. Path B follows the same loop structure but with a
 5. Slot 2: utility bucket formula applies. Pool is built from series representatives (one per remaining series). Right panel shows the 50/30/20 split: 50% same utility category (Voter Services representative = vid_012), 30% other utility (Phone Basics representative = vid_014), 20% aspiration (any aspiration entry point). Right panel shows which bucket was sampled and which representative was selected.
 6. Left panel shows the result with warm nudge tone: no quiz, no progress message, just the two recommendation slots.
 
-**What the evaluator should see:** The system did not call an LLM. It did not run a quiz. It made one classification decision (utility) and then ran a bucket-based recommendation. The right panel shows the 50/30/20 distribution and how the pool was constructed from series representatives. This is the same engine doing less work, not a different path — the content type gate is a filter applied at the start of the same pipeline.
+**What the evaluator should see:** The system did not call an LLM. It did not run a quiz. It made one classification decision (utility) and then ran a bucket-based recommendation. The right panel shows the 50/30/20 distribution and how the pool was constructed from series representatives. This is the same engine doing less work, not a different path. The content type gate is a filter applied at the start of the same pipeline.
 
 ---
 
 ## Sandbox
 
-The Sandbox is a free-form page available alongside the five journeys in the sidebar. It is not a scripted scenario. The presenter or evaluator can select any user, any video, and any completion rate and run the full pipeline on demand.
+The Sandbox is a free-form page available as the last tab alongside the five journeys. It is not a scripted scenario. The presenter or evaluator can select any user, any video, and any completion rate and run the full pipeline on demand.
 
-**Controls:** User dropdown (Priya, Rahul), video dropdown (all 15 videos, labelled with title and content type), completion rate slider (0.0 to 1.0), and a **Use fresh copy** toggle.
+**Controls:** User dropdown (Priya, Rahul), video dropdown (all 15 videos, labelled with title and content type), and completion rate slider (0.0 to 1.0). All calls go through the same FastAPI server and affect the live database. Click **Reset Demo** to restore seed state after experimenting.
 
-**Use fresh copy on:** The pipeline runs against a temporary copy of the seed database. Changes are discarded after the run. The live database is untouched, so journeys are unaffected.
-
-**Use fresh copy off:** The pipeline runs against the live database. State persists. A warning banner is shown. This mode lets the presenter demonstrate continued state accumulation after the scripted journeys.
-
-**Output:** The same two-panel layout as the journey pages. No step-by-step flow. The full loop runs in one pass and all outputs are shown at once.
+**Output:** The same two-panel layout as the journey pages. No step-by-step flow. The full loop runs in one pass via the API and all outputs are shown at once.
 
 The Sandbox answers the most likely evaluator question after the journeys: "What happens if I try a different combination?" The answer is live, not verbal.
 

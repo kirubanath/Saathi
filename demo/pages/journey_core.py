@@ -1,7 +1,9 @@
 """Journey 1: Core Loop (Priya + vid_001)
 
 Full AS path: video complete -> classification -> recap -> quiz -> evaluation ->
-knowledge update -> progress message -> recommendation -> recall scheduling.
+knowledge update -> progress message -> recall scheduling -> recommendation.
+
+All data flows through the FastAPI server over HTTP.
 """
 
 import copy
@@ -9,22 +11,23 @@ from datetime import datetime, timezone
 
 import streamlit as st
 
-from db.base import SessionLocal
-from db.operations import get_user, get_video
-from engine.loop import run_video_complete_loop, run_quiz_submit
-from engine.quiz_engine import Question
+from demo import api_client
 from storage.base import get_storage_client
 
+from demo.components.html_blocks import step_indicator, step_nav, event_card, journey_prestart_card, step_columns
 from demo.components.preprocessing_panel import render_preprocessing
 from demo.components.user_panel import (
+    render_panel_header as render_learner_header,
     render_user_profile,
     render_recap,
     render_quiz,
     render_quiz_results,
     render_recommendation,
     render_progress_message,
+    render_journey_complete,
 )
 from demo.components.system_panel import (
+    render_panel_header as render_system_header,
     render_classification,
     render_concept_ranking,
     render_knowledge_comparison,
@@ -34,12 +37,22 @@ from demo.components.system_panel import (
     render_reasoning_log,
     render_quiz_difficulty,
 )
-from demo.components.state_display import render_knowledge_chart
+from demo.components.state_display import render_knowledge_chart, render_knowledge_json
 
 
 USER_ID = "priya"
 VIDEO_ID = "vid_001"
 PREFIX = "j1"
+
+STEP_LABELS = [
+    "Profile", "Video Complete", "Recap",
+    "Quiz", "Evaluation", "Progress", "Recall", "Recommendations",
+]
+
+_INVALIDATE = {
+    5: [f"{PREFIX}_quiz_data", f"{PREFIX}_knowledge_after_quiz", f"{PREFIX}_answers"],
+    8: [f"{PREFIX}_completion_time"],
+}
 
 
 def _get_step():
@@ -50,129 +63,18 @@ def _set_step(step):
     st.session_state[f"{PREFIX}_step"] = step
 
 
-def _extract_user_data(user):
-    """Extract serializable user data from ORM object."""
-    return {
-        "user_id": user.user_id,
-        "user_type": user.user_type,
-        "maturity": user.maturity,
-        "total_videos_watched": user.total_videos_watched,
-        "knowledge_state": copy.deepcopy(user.knowledge_state) if user.knowledge_state else {},
-    }
-
-
-def _extract_loop_result(result):
-    """Convert LoopResult to a serializable dict for session state storage."""
-    data = {
-        "classification": {
-            "content_type": result.classification.content_type,
-            "user_type": result.classification.user_type,
-            "maturity": result.classification.maturity,
-            "show_recap": result.classification.show_recap,
-            "show_quiz": result.classification.show_quiz,
-            "show_recall": result.classification.show_recall,
-            "max_bullets": result.classification.max_bullets,
-            "difficulty_cap": result.classification.difficulty_cap,
-            "reasoning": list(result.classification.reasoning),
-        },
-        "recap": None,
-        "questions": None,
-        "recommendation": None,
-        "watch_update_delta": None,
-        "reasoning": list(result.reasoning),
-    }
-
-    if result.recap:
-        data["recap"] = [
-            {
-                "concept": b.concept,
-                "bullet": b.bullet,
-                "tone": b.tone,
-                "coverage_score": b.coverage_score,
-                "gap_score": b.gap_score,
-                "rank": b.rank,
-            }
-            for b in result.recap.bullets
-        ]
-        data["recap_reasoning"] = list(result.recap.reasoning)
-
-    if result.questions:
-        data["questions"] = [
-            {
-                "concept": q.concept,
-                "difficulty": q.difficulty,
-                "question": q.question,
-                "options": list(q.options),
-                "correct_index": q.correct_index,
-            }
-            for q in result.questions
-        ]
-
-    if result.recommendation:
-        data["recommendation"] = {
-            "slot1": result.recommendation.slot1,
-            "slot2": result.recommendation.slot2,
-            "reasoning": list(result.recommendation.reasoning),
-        }
-
-    if result.watch_update:
-        data["watch_update_delta"] = copy.deepcopy(result.watch_update.delta)
-
-    return data
-
-
-def _extract_quiz_result(result):
-    """Convert QuizResult to a serializable dict."""
-    data = {
-        "eval_results": [
-            {"concept": r.concept, "correct": r.correct, "score": r.score}
-            for r in result.eval_results
-        ],
-        "score_delta": copy.deepcopy(result.score_delta),
-        "progress_message": result.progress_message,
-        "recommendation": {
-            "slot1": result.recommendation.slot1,
-            "slot2": result.recommendation.slot2,
-            "reasoning": list(result.recommendation.reasoning),
-        } if result.recommendation else None,
-        "recalls_scheduled": result.recalls_scheduled,
-        "reasoning": list(result.reasoning),
-    }
-    return data
-
-
-STEP_LABELS = [
-    "Pre-start", "Profile", "Video Complete", "Recap",
-    "Quiz", "Evaluation", "Knowledge Update", "Recommendations", "Recall",
-]
-
-
-def _render_step_indicator(current: int):
-    """Render a compact step progress bar."""
-    if current == 0:
-        return
-    cols = st.columns(len(STEP_LABELS) - 1)
-    for i, (col, label) in enumerate(zip(cols, STEP_LABELS[1:])):
-        step_num = i + 1
-        if step_num < current:
-            col.markdown(f"<div style='text-align:center;color:#2ecc71;font-size:0.75rem'>&#10003; {label}</div>", unsafe_allow_html=True)
-        elif step_num == current:
-            col.markdown(f"<div style='text-align:center;color:#4A90D9;font-weight:600;font-size:0.75rem'>{label}</div>", unsafe_allow_html=True)
-        else:
-            col.markdown(f"<div style='text-align:center;color:#ccc;font-size:0.75rem'>{label}</div>", unsafe_allow_html=True)
-    st.markdown("")
-
-
 def render():
-    st.title("Journey 1: Core Loop")
-    st.caption("Priya (AS, Warming Up) watches vid_001 (Interview Confidence Ep 1)")
-
     step = _get_step()
-    _render_step_indicator(step)
 
     if step == 0:
         _render_prestart()
-    elif step == 1:
+        return
+
+    st.markdown("#### Journey 1: Core Loop")
+    st.caption("Priya (Aspiration Seeker, Warming Up) watches Interview Confidence Ep 1")
+    step_indicator(STEP_LABELS, step)
+
+    if step == 1:
         _render_profile()
     elif step == 2:
         _render_video_complete()
@@ -185,87 +87,92 @@ def render():
     elif step == 6:
         _render_knowledge_update()
     elif step == 7:
-        _render_recommendation()
-    elif step == 8:
         _render_recall()
+    elif step == 8:
+        _render_recommendation()
 
 
 def _render_prestart():
-    st.markdown(
-        "Full learning loop: classify, recap, quiz, knowledge update, recommend, schedule recall."
+    journey_prestart_card(
+        "Journey 1: Core Loop",
+        "The full proactive learning loop: classify → recap → quiz → "
+        "knowledge update → schedule recall → recommend.",
+        "User: Priya (AS, Warming Up) · Video: vid_001 — Interview Confidence Ep 1",
     )
 
-    col1, col2, _ = st.columns([1, 1, 2])
-    with col1:
-        if st.button("Preprocess vid_001", key=f"{PREFIX}_preprocess"):
-            st.session_state[f"{PREFIX}_show_preprocess"] = True
-    with col2:
+    left_btn, _, right_btn = st.columns([1, 4, 1])
+    with left_btn:
         if st.button("Start Journey", key=f"{PREFIX}_start", type="primary"):
             _set_step(1)
             st.rerun()
+    with right_btn:
+        if st.button("Preprocess vid_001", key=f"{PREFIX}_preprocess"):
+            st.session_state[f"{PREFIX}_show_preprocess"] = True
 
     if st.session_state.get(f"{PREFIX}_show_preprocess"):
+        st.markdown("---")
         render_preprocessing(VIDEO_ID)
 
 
 def _render_profile():
-    st.markdown("### User Profile")
-
     if f"{PREFIX}_user_data" not in st.session_state:
-        db = SessionLocal()
         try:
-            user = get_user(db, USER_ID)
-            user_data = _extract_user_data(user)
-            st.session_state[f"{PREFIX}_user_data"] = user_data
-            st.session_state[f"{PREFIX}_knowledge_before"] = copy.deepcopy(user_data["knowledge_state"])
-        finally:
-            db.close()
+            user_data = api_client.get_user(USER_ID)
+        except Exception as e:
+            st.error(f"Could not reach API server: {e}")
+            return
+        st.session_state[f"{PREFIX}_user_data"] = user_data
+        st.session_state[f"{PREFIX}_knowledge_before"] = copy.deepcopy(user_data["knowledge_state"])
 
     user_data = st.session_state[f"{PREFIX}_user_data"]
 
-    left, right = st.columns(2)
+    left, right = step_columns("j1_s1")
     with left:
+        render_learner_header()
         render_user_profile(user_data)
-    with right:
         render_knowledge_chart(user_data["knowledge_state"], "Current Knowledge")
+    with right:
+        render_system_header()
+        render_knowledge_json(user_data["knowledge_state"], "Raw Knowledge State")
 
-    if st.button("Next", key=f"{PREFIX}_to_step2", type="primary"):
-        _set_step(2)
-        st.rerun()
+    step_nav(PREFIX, 1, 8, _set_step)
 
 
 def _render_video_complete():
-    st.markdown("### Video Complete")
-
     if f"{PREFIX}_loop_data" not in st.session_state:
-        db = SessionLocal()
         try:
-            result = run_video_complete_loop(db, USER_ID, VIDEO_ID, 1.0)
-            st.session_state[f"{PREFIX}_loop_data"] = _extract_loop_result(result)
-            user = get_user(db, USER_ID)
-            st.session_state[f"{PREFIX}_knowledge_after_watch"] = copy.deepcopy(user.knowledge_state)
-        finally:
-            db.close()
+            loop_data = api_client.video_complete(USER_ID, VIDEO_ID, 1.0)
+        except Exception as e:
+            st.error(f"API error during video completion: {e}")
+            return
+        st.session_state[f"{PREFIX}_loop_data"] = loop_data
+        st.session_state[f"{PREFIX}_knowledge_after_watch"] = copy.deepcopy(loop_data.get("knowledge_after_watch", {}))
 
     loop_data = st.session_state[f"{PREFIX}_loop_data"]
 
-    left, right = st.columns(2)
+    left, right = step_columns("j1_s2")
     with left:
-        st.markdown(f"Priya watched **Interview Confidence Ep 1** (`{VIDEO_ID}`)")
+        render_learner_header()
+        event_card("Video Watched",
+                   "Interview Confidence Ep 1<br>Body Language in Interviews")
         if loop_data.get("watch_update_delta"):
-            st.markdown("##### Watch Bump")
-            render_watch_bump(loop_data["watch_update_delta"])
+            items = []
+            for concept, d in loop_data["watch_update_delta"].items():
+                label = concept.replace("_", " ").title()
+                delta = d["after"] - d["before"]
+                items.append(f"- {label}: +{delta:.2f}")
+            st.markdown("**Knowledge updated after watch:**")
+            st.markdown("\n".join(items))
     with right:
+        render_system_header()
         render_classification(loop_data["classification"])
+        if loop_data.get("watch_update_delta"):
+            render_watch_bump(loop_data["watch_update_delta"])
 
-    if st.button("Next", key=f"{PREFIX}_to_step3", type="primary"):
-        _set_step(3)
-        st.rerun()
+    step_nav(PREFIX, 2, 8, _set_step)
 
 
 def _render_recap():
-    st.markdown("### Personalized Recap")
-
     loop_data = st.session_state[f"{PREFIX}_loop_data"]
     recap_bullets = loop_data.get("recap")
 
@@ -276,128 +183,139 @@ def _render_recap():
     except Exception:
         pass
 
-    left, right = st.columns(2)
+    left, right = step_columns("j1_s3")
     with left:
+        render_learner_header()
+        st.markdown("**Recap — key concepts from this video:**")
         render_recap(recap_bullets or [])
     with right:
+        render_system_header()
         render_concept_ranking(recap_bullets or [], concept_profile)
-        render_reasoning_log(loop_data.get("recap_reasoning", []), "Recap reasoning")
+        render_reasoning_log(loop_data.get("recap_reasoning", []), "Recap Engine Logic")
 
-    if st.button("Next", key=f"{PREFIX}_to_step4", type="primary"):
-        _set_step(4)
-        st.rerun()
+    step_nav(PREFIX, 3, 8, _set_step)
 
 
 def _render_quiz():
-    st.markdown("### Quiz")
-
     loop_data = st.session_state[f"{PREFIX}_loop_data"]
     questions = loop_data.get("questions", [])
     knowledge_before = st.session_state.get(f"{PREFIX}_knowledge_before", {})
 
-    left, right = st.columns(2)
+    left, right = step_columns("j1_s4")
     with left:
+        render_learner_header()
+        st.markdown("**Quiz — adaptive questions based on knowledge gaps:**")
         answers = render_quiz(questions, PREFIX)
         if answers is not None:
             st.session_state[f"{PREFIX}_answers"] = answers
             _set_step(5)
             st.rerun()
     with right:
-        st.markdown("##### Difficulty Selection")
+        render_system_header()
         render_quiz_difficulty(questions, knowledge_before)
+
+    step_nav(PREFIX, 4, 8, _set_step, show_next=False)
 
 
 def _render_quiz_submit():
-    st.markdown("### Evaluation")
-
     if f"{PREFIX}_quiz_data" not in st.session_state:
         loop_data = st.session_state[f"{PREFIX}_loop_data"]
         questions_data = loop_data["questions"]
-        answers = st.session_state[f"{PREFIX}_answers"]
+        answers_raw = st.session_state[f"{PREFIX}_answers"]
 
-        questions = [
-            Question(
-                concept=q["concept"],
-                difficulty=q["difficulty"],
-                question=q["question"],
-                options=q["options"],
-                correct_index=q["correct_index"],
-            )
-            for q in questions_data
+        answer_items = [
+            {"concept": q["concept"], "answer_index": a}
+            for q, a in zip(questions_data, answers_raw)
         ]
 
-        db = SessionLocal()
         try:
-            result = run_quiz_submit(db, USER_ID, VIDEO_ID, questions, answers)
-            st.session_state[f"{PREFIX}_quiz_data"] = _extract_quiz_result(result)
-            user = get_user(db, USER_ID)
-            st.session_state[f"{PREFIX}_knowledge_after_quiz"] = copy.deepcopy(user.knowledge_state)
-        finally:
-            db.close()
+            quiz_data = api_client.quiz_submit(USER_ID, VIDEO_ID, questions_data, answer_items)
+        except Exception as e:
+            st.error(f"API error during quiz submission: {e}")
+            return
+        st.session_state[f"{PREFIX}_quiz_data"] = quiz_data
+        st.session_state[f"{PREFIX}_knowledge_after_quiz"] = copy.deepcopy(quiz_data.get("knowledge_after_quiz", {}))
 
     quiz_data = st.session_state[f"{PREFIX}_quiz_data"]
     loop_data = st.session_state[f"{PREFIX}_loop_data"]
 
-    left, right = st.columns(2)
+    left, right = step_columns("j1_s5")
     with left:
-        render_quiz_results(quiz_data["eval_results"], loop_data["questions"])
+        render_learner_header()
+        render_quiz_results(quiz_data["results"], loop_data["questions"])
     with right:
-        correct_count = sum(1 for r in quiz_data["eval_results"] if r["correct"])
-        total = len(quiz_data["eval_results"])
+        render_system_header()
+        correct_count = sum(1 for r in quiz_data["results"] if r["correct"])
+        total = len(quiz_data["results"])
         st.metric("Score", f"{correct_count}/{total}")
-        render_reasoning_log(quiz_data["reasoning"], "Evaluation reasoning")
+        render_reasoning_log(quiz_data["reasoning"], "Evaluation Logic")
 
-    if st.button("Next", key=f"{PREFIX}_to_step6", type="primary"):
-        _set_step(6)
-        st.rerun()
+    step_nav(PREFIX, 5, 8, _set_step, invalidate_from=_INVALIDATE)
 
 
 def _render_knowledge_update():
-    st.markdown("### Knowledge Update")
-
     quiz_data = st.session_state[f"{PREFIX}_quiz_data"]
 
-    left, right = st.columns(2)
+    left, right = step_columns("j1_s6")
     with left:
+        render_learner_header()
         render_progress_message(quiz_data.get("progress_message"))
+        knowledge_after = st.session_state.get(f"{PREFIX}_knowledge_after_quiz", {})
+        render_knowledge_chart(knowledge_after, "Updated Knowledge")
     with right:
-        render_knowledge_comparison(quiz_data["score_delta"])
-        st.caption("EMA: new = old + 0.3 x (score - old)")
+        render_system_header()
+        render_knowledge_comparison(quiz_data["progress"])
+        st.caption("`EMA: new = old + 0.3 × (score − old)`")
 
-    if st.button("Next", key=f"{PREFIX}_to_step7", type="primary"):
-        _set_step(7)
-        st.rerun()
-
-
-def _render_recommendation():
-    st.markdown("### Recommendations")
-
-    quiz_data = st.session_state[f"{PREFIX}_quiz_data"]
-
-    left, right = st.columns(2)
-    with left:
-        render_recommendation(quiz_data.get("recommendation", {}))
-    with right:
-        render_recommendation_breakdown(quiz_data.get("recommendation", {}))
-
-    if st.button("Next", key=f"{PREFIX}_to_step8", type="primary"):
-        _set_step(8)
-        st.rerun()
+    step_nav(PREFIX, 6, 8, _set_step, invalidate_from=_INVALIDATE)
 
 
 def _render_recall():
-    st.markdown("### Recall Scheduling")
-
     quiz_data = st.session_state[f"{PREFIX}_quiz_data"]
 
     if f"{PREFIX}_completion_time" not in st.session_state:
         st.session_state[f"{PREFIX}_completion_time"] = datetime.now(timezone.utc)
 
-    left, right = st.columns(2)
+    left, right = step_columns("j1_s7")
     with left:
-        st.success("Journey 1 Complete")
+        render_learner_header()
+        recall_details = quiz_data.get("recall_details", [])
+        if recall_details:
+            from demo.components.html_blocks import learner_visible_card
+            learner_visible_card(
+                "Recalls Scheduled",
+                "<br>".join(
+                    f"• {r['concept_key'].split('/', 1)[-1].replace('_', ' ').title()} "
+                    f"— review in {r['interval_hours']:.0f}h"
+                    for r in recall_details
+                ),
+            )
+    with right:
+        render_system_header()
+        render_recall_details(
+            quiz_data["recalls_scheduled"],
+            recall_details=quiz_data.get("recall_details"),
+        )
+        st.caption("Journey 4 simulates 48h later to surface these recalls.")
+
+    step_nav(PREFIX, 7, 8, _set_step, invalidate_from=_INVALIDATE)
+
+
+def _render_recommendation():
+    quiz_data = st.session_state[f"{PREFIX}_quiz_data"]
+    loop_data = st.session_state[f"{PREFIX}_loop_data"]
+
+    left, right = step_columns("j1_s8")
+    with left:
+        render_learner_header()
+        st.markdown("**Recommendations — next videos:**")
+        render_recommendation(quiz_data.get("recommendation", {}))
+        render_journey_complete("The Core Loop — Priya + vid_001")
         knowledge_after = st.session_state.get(f"{PREFIX}_knowledge_after_quiz", {})
         render_knowledge_chart(knowledge_after, "Final Knowledge State")
     with right:
-        render_recall_details(quiz_data["recalls_scheduled"])
-        st.caption("Journey 4 will simulate 24h later to surface these recalls.")
+        render_system_header()
+        render_recommendation_breakdown(quiz_data.get("recommendation", {}))
+        render_reasoning_log(loop_data.get("reasoning", []), "Full Pipeline Log")
+
+    step_nav(PREFIX, 8, 8, _set_step, invalidate_from=_INVALIDATE)

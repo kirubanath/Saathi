@@ -32,6 +32,7 @@ class QuizResult:
     progress_message: str | None = None
     recommendation: RecommendationResult | None = None
     recalls_scheduled: int = 0
+    recall_entries: list[RecallEntry] = field(default_factory=list)
     reasoning: list[str] = field(default_factory=list)
 
 
@@ -79,13 +80,21 @@ def run_video_complete_loop(
         db, user, video.category, artifacts["concept_profile"], completion_rate
     )
     result.watch_update = watch_update
-    # Refresh user after knowledge state update
     db.refresh(user)
     reasoning.append(
         "Watch bump applied: " + ", ".join(
             f"{c}={d['after']:.2f}" for c, d in watch_update.delta.items()
         )
     )
+
+    # Gate: below 80% completion, skip recap/quiz/recall but still recommend
+    if completion_rate < 0.8:
+        reasoning.append(
+            f"Completion {completion_rate:.0%} < 80%: watch bump only, no recap/quiz/recall"
+        )
+        result.recommendation = recommend(db, user, video)
+        reasoning.extend(result.recommendation.reasoning)
+        return result
 
     # Step 4: Generate recap (if applicable)
     if classification.show_recap:
@@ -177,5 +186,6 @@ def run_quiz_submit(
         progress_message=progress_message,
         recommendation=recommendation,
         recalls_scheduled=len(recall_entries),
+        recall_entries=recall_entries,
         reasoning=reasoning,
     )

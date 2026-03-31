@@ -112,10 +112,14 @@ ASPIRATION_VIDEOS = [
 ]
 
 
-def preprocess_all() -> list[dict]:
-    """Preprocess all 7 aspiration videos. Returns list of summaries."""
+def preprocess_all(force: bool = False) -> list[dict]:
+    """Preprocess all 7 aspiration videos. Skips videos whose artifacts already exist in MinIO unless force=True."""
+    storage = get_storage_client()
     results = []
     for video_id, series_id, category in ASPIRATION_VIDEOS:
+        if not force and storage.exists(f"videos/{video_id}/concept_profile.json"):
+            print(f"  {video_id}: artifacts exist in MinIO — skipping (use force=True to re-run)")
+            continue
         transcript_path = _resolve_transcript_path(video_id, series_id)
         summary = preprocess_video(video_id, transcript_path, category)
         results.append(summary)

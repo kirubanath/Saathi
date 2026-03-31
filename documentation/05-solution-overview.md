@@ -341,13 +341,27 @@ time_decay(d) = 1 - exp(-d/30)
 
 A series the user just completed with high scores is heavily suppressed. A series completed long ago with poor quiz performance scores high and resurfaces naturally. If quizzes were skipped across the series, `avg_series_quiz_score = 0.5` (moderate suppression). For never-started and mid-series representatives, `final_score = relevance` with no penalty.
 
-**Sampling:**
+**Sampling (two-stage bucket):**
+
+Selection uses a two-stage process. Stage 1 picks a bucket. Stage 2 picks a video within that bucket.
+
+Stage 1: Roll a bucket using the target allocation weights:
+
+- 80% same category
+- 15% adjacent category
+- 5% discovery (everything else, including non-aspiration baselines)
+
+If a bucket is empty, its weight is redistributed proportionally to the non-empty buckets. For example, if no adjacent candidates exist, the effective weights become ~94% same and ~6% discovery.
+
+Stage 2: Within the chosen bucket, sample proportional to relevance scores using softmax with a user-maturity temperature:
 
 ```
-prob(video) proportional to exp(final_score / temperature)
+prob(video) proportional to exp(relevance / temperature)
 ```
 
-Temperature by user state: AS Established = 0.3 (sharp targeting), AS Warming Up = 0.5, IS Warming Up = 0.8, IS New = 1.2, first session = 1.5. Higher temperature means broader exploration; lower means tighter targeting.
+Temperature by user state: AS Established = 0.3 (sharp targeting), AS Warming Up = 0.5, IS Warming Up = 0.8, IS New = 1.2, first session = 1.5. Higher temperature means broader exploration within the bucket; lower means tighter targeting toward the highest-relevance video. Temperature does not affect the bucket selection. The 80/15/5 split is a hard allocation.
+
+Non-aspiration candidates (utility and entertainment baselines) are placed in the discovery bucket with a baseline score of 0.1 and sampled uniformly if no scored aspiration candidates are present in that bucket.
 
 **Entertainment and utility videos**
 

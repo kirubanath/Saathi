@@ -1,51 +1,70 @@
+"""Left-panel UI components.
+
+Uses two card styles:
+- learner_visible cards (blue + tag): recap, quiz, recs, progress — what
+  the learner would actually see in production.
+- event cards (neutral grey): profile, video watched — demo narrative
+  context only, never shown in production.
+"""
+
 import streamlit as st
+from demo.components.html_blocks import (
+    panel_header_learner,
+    user_profile_card,
+    event_card,
+    learner_visible_card,
+    recap_card,
+    quiz_result_card,
+    recommendation_card,
+    progress_card,
+    journey_complete_banner,
+)
+
+
+def render_panel_header():
+    panel_header_learner()
 
 
 def render_user_profile(user_data: dict):
-    """Show user profile card."""
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("User", user_data.get("user_id", "").title())
-    col2.metric("Type", user_data.get("user_type", ""))
-    col3.metric("Maturity", user_data.get("maturity", "").replace("_", " ").title())
-    col4.metric("Videos Watched", user_data.get("total_videos_watched", 0))
+    """Event card: user profile (evaluator context)."""
+    user_name = user_data.get("user_id", "").title()
+    user_type = user_data.get("user_type", "")
+    maturity = user_data.get("maturity", "").replace("_", " ").title()
+    videos = user_data.get("total_videos_watched", 0)
+
+    type_labels = {"AS": "Aspiration Seeker", "IS": "Information Seeker", "CO": "Converting"}
+    type_display = type_labels.get(user_type, user_type)
+
+    user_profile_card(user_name, type_display, maturity, videos)
 
 
 def render_recap(bullets: list[dict]):
-    """Render recap bullets."""
+    """Learner-visible: recap bullets."""
     if not bullets:
         st.info("No recap generated for this path.")
         return
 
     for b in sorted(bullets, key=lambda x: x.get("rank", 0)):
         concept_label = b["concept"].replace("_", " ").title()
-        with st.container(border=True):
-            cols = st.columns([3, 1])
-            with cols[0]:
-                st.markdown(f"**{concept_label}**")
-                st.markdown(b["bullet"])
-            with cols[1]:
-                st.caption(f"Tone: {b['tone'].upper()}")
-                st.caption(f"Coverage: {b['coverage_score']:.2f}")
-                st.caption(f"Gap: {b['gap_score']:.2f}")
+        recap_card(concept_label, b["bullet"], b.get("tone", ""))
 
 
 def render_quiz(questions: list[dict], key_prefix: str):
-    """Render quiz. Returns list of answer indices when submitted, None otherwise."""
+    """Learner-visible: quiz questions. Returns answer indices when submitted."""
     if not questions:
         st.info("No quiz for this path.")
         return None
 
     for i, q in enumerate(questions):
         concept_label = q["concept"].replace("_", " ").title()
-        with st.container(border=True):
-            st.markdown(f"**Q{i+1}** | {concept_label} | Difficulty: `{q['difficulty']}`")
-            st.markdown(q["question"])
-            st.radio(
-                "Select answer",
-                options=q["options"],
-                key=f"{key_prefix}_q_{i}",
-                label_visibility="collapsed",
-            )
+        learner_visible_card(f"Question {i+1}: {concept_label}", "")
+        st.markdown(f"**{q['question']}**")
+        st.radio(
+            "Select answer",
+            options=q["options"],
+            key=f"{key_prefix}_q_{i}",
+            label_visibility="collapsed",
+        )
 
     if st.button("Submit Answers", key=f"{key_prefix}_submit", type="primary"):
         answers = []
@@ -61,48 +80,42 @@ def render_quiz(questions: list[dict], key_prefix: str):
 
 
 def render_quiz_results(results: list[dict], questions: list[dict]):
-    """Show correct/incorrect per question."""
+    """Learner-visible: quiz results."""
     for i, (r, q) in enumerate(zip(results, questions)):
         concept_label = r["concept"].replace("_", " ").title()
         correct_answer = q["options"][q["correct_index"]]
-        if r["correct"]:
-            st.success(f"Q{i+1} ({concept_label}): Correct")
-        else:
-            st.error(f"Q{i+1} ({concept_label}): Incorrect. Answer: {correct_answer}")
+        quiz_result_card(i + 1, concept_label, r["correct"], correct_answer)
 
 
 def render_recommendation(recommendation: dict):
-    """Render recommendation cards."""
+    """Learner-visible: recommendation cards."""
     if not recommendation:
         st.info("No recommendations generated.")
         return
 
-    col1, col2 = st.columns(2)
+    slot1 = recommendation.get("slot1")
+    slot2 = recommendation.get("slot2")
 
-    with col1:
-        slot1 = recommendation.get("slot1")
-        with st.container(border=True):
-            st.caption("SLOT 1: NEXT IN SERIES")
-            if slot1:
-                st.markdown(f"**{slot1.get('title', slot1.get('video_id', 'Unknown'))}**")
-                st.caption(f"{slot1.get('content_type', '')} / {slot1.get('category', '')}")
-                st.caption(f"Episode {slot1.get('series_position', '?')}")
-            else:
-                st.markdown("*No series continuation*")
+    if slot1:
+        title = slot1.get("title", slot1.get("video_id", "Unknown"))
+        ctype = slot1.get("content_type", "")
+        cat = slot1.get("category", "")
+        ep = slot1.get("series_position", "?")
+        recommendation_card("Next in Series", "series", title, f"{ctype} · {cat} · Episode {ep}")
 
-    with col2:
-        slot2 = recommendation.get("slot2")
-        with st.container(border=True):
-            st.caption("SLOT 2: RECOMMENDED FOR YOU")
-            if slot2:
-                st.markdown(f"**{slot2.get('title', slot2.get('video_id', 'Unknown'))}**")
-                st.caption(f"{slot2.get('content_type', '')} / {slot2.get('category', '')}")
-                st.caption(f"Episode {slot2.get('series_position', '?')}")
-            else:
-                st.markdown("*No additional recommendation*")
+    if slot2:
+        title = slot2.get("title", slot2.get("video_id", "Unknown"))
+        ctype = slot2.get("content_type", "")
+        cat = slot2.get("category", "")
+        ep = slot2.get("series_position", "?")
+        recommendation_card("Engine Pick", "engine", title, f"{ctype} · {cat} · Episode {ep}")
 
 
 def render_progress_message(message: str | None):
-    """Display progress message."""
+    """Learner-visible: progress update."""
     if message:
-        st.success(message)
+        progress_card(message)
+
+
+def render_journey_complete(journey_name: str):
+    journey_complete_banner(journey_name)

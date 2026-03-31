@@ -1,4 +1,4 @@
-from dataclasses import asdict
+import copy
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -10,17 +10,23 @@ from api.schemas import (
     RecallAnswerRequest,
     RecallAnswerResponse,
     RecallItemSchema,
+    RecallScheduledSchema,
     RecapBulletSchema,
     RecommendationSchema,
     SessionStartRequest,
     SessionStartResponse,
+    UserListResponse,
+    UserProfileResponse,
+    UserProfileSchema,
     VideoCompleteRequest,
     VideoCompleteResponse,
+    VideoListResponse,
+    VideoSchema,
     QuizSubmitRequest,
     QuizSubmitResponse,
 )
 from db.base import get_db
-from db.models import RecallQueue
+from db.models import RecallQueue, User, Video
 from db.operations import get_user, get_video
 from engine.knowledge_updater import update_from_recall
 from engine.loop import run_video_complete_loop, run_quiz_submit
@@ -30,6 +36,16 @@ from preprocessing.pipeline import preprocess_all
 from storage.base import get_storage_client
 
 router = APIRouter()
+
+
+def _user_to_schema(user) -> UserProfileSchema:
+    return UserProfileSchema(
+        user_id=user.user_id,
+        user_type=user.user_type,
+        maturity=user.maturity,
+        total_videos_watched=user.total_videos_watched,
+        knowledge_state=copy.deepcopy(user.knowledge_state) if user.knowledge_state else {},
+    )
 
 
 def _recap_to_schema(recap_result):
@@ -73,11 +89,43 @@ def _recommendation_to_schema(rec):
     )
 
 
+@router.get("/user/{user_id}", response_model=UserProfileResponse)
+def get_user_profile(user_id: str, db: Session = Depends(get_db)):
+    user = get_user(db, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail=f"User {user_id} not found")
+    return UserProfileResponse(user=_user_to_schema(user))
+
+
+@router.get("/users", response_model=UserListResponse)
+def list_users(db: Session = Depends(get_db)):
+    users = db.query(User).all()
+    return UserListResponse(users=[_user_to_schema(u) for u in users])
+
+
+@router.get("/videos", response_model=VideoListResponse)
+def list_videos(db: Session = Depends(get_db)):
+    videos = db.query(Video).order_by(Video.video_id).all()
+    return VideoListResponse(
+        videos=[
+            VideoSchema(
+                video_id=v.video_id,
+                title=v.title,
+                content_type=v.content_type,
+                category=v.category,
+            )
+            for v in videos
+        ]
+    )
+
+
 @router.post("/session/start", response_model=SessionStartResponse)
 def session_start(req: SessionStartRequest, db: Session = Depends(get_db)):
     user = get_user(db, req.user_id)
     if not user:
         raise HTTPException(status_code=404, detail=f"User {req.user_id} not found")
+
+    knowledge_before = copy.deepcopy(user.knowledge_state) if user.knowledge_state else {}
 
     recalls = get_pending_recalls(db, req.user_id, req.simulated_time)
     recall_schemas = [
@@ -91,7 +139,12 @@ def session_start(req: SessionStartRequest, db: Session = Depends(get_db)):
         )
         for r in recalls
     ]
-    return SessionStartResponse(recalls=recall_schemas, milestones=[])
+    return SessionStartResponse(
+        recalls=recall_schemas,
+        milestones=[],
+        user_data=_user_to_schema(user),
+        knowledge_before=knowledge_before,
+    )
 
 
 @router.post("/recall/answer", response_model=RecallAnswerResponse)
@@ -104,13 +157,11 @@ def recall_answer(req: RecallAnswerRequest, db: Session = Depends(get_db)):
     if not recall:
         raise HTTPException(status_code=404, detail=f"Recall {req.recall_id} not found")
 
-    # Load question from storage to determine correctness
     category, concept = recall.concept_key.split("/", 1)
     storage = get_storage_client()
     questions_data = storage.get_json(f"videos/{recall.source_video_id}/questions.json")
     concept_questions = questions_data.get(concept, {})
 
-    # Find the question that matches (try medium, easy, hard - same order as get_pending_recalls)
     question = None
     for difficulty in ("medium", "easy", "hard"):
         if difficulty in concept_questions:
@@ -121,22 +172,20 @@ def recall_answer(req: RecallAnswerRequest, db: Session = Depends(get_db)):
     if question:
         correct = req.answer_index == question.get("correct_index")
 
-    # Update recall interval
     recall_update = process_recall_result(db, recall, correct)
 
-    # Update knowledge state
     result_score = 1.0 if correct else 0.0
     knowledge_update = update_from_recall(db, user, recall.concept_key, result_score)
     db.refresh(user)
 
-    # Get the new score for the concept
-    category, concept = recall.concept_key.split("/", 1)
     new_score = knowledge_update.updated_state.get(concept, 0.0)
 
     return RecallAnswerResponse(
         correct=correct,
         new_score=new_score,
         next_interval_hours=recall_update.new_interval,
+        knowledge_delta=copy.deepcopy(knowledge_update.delta),
+        knowledge_after=copy.deepcopy(user.knowledge_state) if user.knowledge_state else {},
     )
 
 
@@ -150,7 +199,10 @@ def video_complete(req: VideoCompleteRequest, db: Session = Depends(get_db)):
     if not video:
         raise HTTPException(status_code=404, detail=f"Video {req.video_id} not found")
 
+    user_data = _user_to_schema(user)
+
     result = run_video_complete_loop(db, req.user_id, req.video_id, req.completion_rate)
+    db.refresh(user)
 
     classification_dict = {
         "content_type": result.classification.content_type,
@@ -164,11 +216,26 @@ def video_complete(req: VideoCompleteRequest, db: Session = Depends(get_db)):
         "reasoning": result.classification.reasoning,
     }
 
+    watch_update_delta = None
+    if result.watch_update:
+        watch_update_delta = copy.deepcopy(result.watch_update.delta)
+
+    recap_reasoning = []
+    if result.recap:
+        recap_reasoning = list(result.recap.reasoning)
+
+    knowledge_after_watch = copy.deepcopy(user.knowledge_state) if user.knowledge_state else {}
+
     return VideoCompleteResponse(
         classification=classification_dict,
         recap=_recap_to_schema(result.recap),
         questions=_questions_to_schema(result.questions),
         recommendation=_recommendation_to_schema(result.recommendation),
+        watch_update_delta=watch_update_delta,
+        recap_reasoning=recap_reasoning,
+        reasoning=list(result.reasoning),
+        user_data=user_data,
+        knowledge_after_watch=knowledge_after_watch,
     )
 
 
@@ -182,7 +249,6 @@ def quiz_submit(req: QuizSubmitRequest, db: Session = Depends(get_db)):
     if not video:
         raise HTTPException(status_code=404, detail=f"Video {req.video_id} not found")
 
-    # Reconstruct engine Question objects from request
     questions = [
         Question(
             concept=q.concept,
@@ -194,11 +260,21 @@ def quiz_submit(req: QuizSubmitRequest, db: Session = Depends(get_db)):
         for q in req.questions
     ]
 
-    # Build answer indices in the same order as questions
     answer_map = {a.concept: a.answer_index for a in req.answers}
     answers = [answer_map[q.concept] for q in questions]
 
     result = run_quiz_submit(db, req.user_id, req.video_id, questions, answers)
+    db.refresh(user)
+
+    recall_details = [
+        RecallScheduledSchema(
+            concept_key=r.concept_key,
+            source_video_id=r.source_video_id,
+            due_at=r.due_at,
+            interval_hours=r.interval_hours,
+        )
+        for r in result.recall_entries
+    ]
 
     return QuizSubmitResponse(
         results=[
@@ -209,6 +285,9 @@ def quiz_submit(req: QuizSubmitRequest, db: Session = Depends(get_db)):
         progress_message=result.progress_message,
         recommendation=_recommendation_to_schema(result.recommendation),
         recalls_scheduled=result.recalls_scheduled,
+        recall_details=recall_details,
+        reasoning=list(result.reasoning),
+        knowledge_after_quiz=copy.deepcopy(user.knowledge_state) if user.knowledge_state else {},
     )
 
 

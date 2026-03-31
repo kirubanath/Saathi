@@ -27,6 +27,19 @@ def add_watch_history(
     completion_rate: float,
     quiz_scores: dict,
 ) -> WatchHistory:
+    existing = (
+        db.query(WatchHistory)
+        .filter_by(user_id=user_id, video_id=video_id)
+        .first()
+    )
+    if existing:
+        existing.completion_rate = completion_rate
+        existing.quiz_scores = quiz_scores
+        existing.watched_at = datetime.now(timezone.utc)
+        db.commit()
+        db.refresh(existing)
+        return existing
+
     entry = WatchHistory(
         user_id=user_id,
         video_id=video_id,
@@ -63,6 +76,19 @@ def schedule_recall(
     due_at: datetime,
     interval_hours: float,
 ) -> RecallQueue:
+    existing = (
+        db.query(RecallQueue)
+        .filter_by(user_id=user_id, concept_key=concept_key, status="pending")
+        .first()
+    )
+    if existing:
+        existing.source_video_id = source_video_id
+        existing.due_at = due_at
+        existing.interval_hours = interval_hours
+        db.commit()
+        db.refresh(existing)
+        return existing
+
     entry = RecallQueue(
         user_id=user_id,
         concept_key=concept_key,

@@ -18,11 +18,9 @@ Start with SOLUTION.md in the project root for a concise summary of the full pro
 
 **[06-architecture.md](06-architecture.md)** - How the system is structured. Three diagrams (one per phase), API endpoints, technology choices, LLM layer design, component read/write responsibilities, data layer, deployment, and scaling.
 
-**[07-demo-overview.md](07-demo-overview.md)** - How the demo works. What the demo proves, format, two demo users, the preprocessing step, and four journeys including a counterfactual proof that the system makes real decisions based on user state.
+**[07-demo-overview.md](07-demo-overview.md)** - How the demo works. What the demo proves, format, two demo users, the preprocessing step, and five journeys including a counterfactual proof that the system makes real decisions based on user state.
 
 **[08-design-decisions.md](08-design-decisions.md)** - Why the system is designed this way. Key decisions with reasoning and tradeoffs: LLM offline strategy, EMA alpha choices, fixed taxonomy, recall scheduling, rule-based classifier, two-call quiz design, and known limitations.
-
-**[09-data-verification.md](09-data-verification.md)** - Developer reference for inspecting the mock dataset. SQLite queries for users, videos, watch history, and recall queue. Expected seed values for both users. How to verify MinIO artifacts after preprocessing and confirm utility and entertainment videos have no artifacts.
 
 ---
 

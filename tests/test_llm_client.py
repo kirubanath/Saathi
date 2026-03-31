@@ -1,10 +1,20 @@
 import pytest
+from config.settings import settings
 from llm.base import get_llm_client
+
+_SKIP_NO_KEY = "ANTHROPIC_API_KEY not set"
 
 
 @pytest.fixture(scope="module")
 def client():
-    return get_llm_client()
+    if not settings.ANTHROPIC_API_KEY:
+        pytest.skip(_SKIP_NO_KEY)
+    c = get_llm_client()
+    try:
+        c.generate("Say hi.")
+    except Exception as exc:
+        pytest.skip(f"LLM API unavailable: {exc}")
+    return c
 
 
 def test_generate_returns_string(client):

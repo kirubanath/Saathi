@@ -146,6 +146,6 @@ def get_pending_recalls(
                 )
                 break
 
-    # Rank by due_at (most overdue first)
+    # Rank by due_at (most overdue first), cap at 5
     items.sort(key=lambda x: x.due_at)
-    return items
+    return items[:5]

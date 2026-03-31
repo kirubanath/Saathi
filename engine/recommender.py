@@ -267,81 +267,148 @@ def _aspiration_pick(
     watch_history: list[WatchHistory],
     reasoning: list[str],
 ) -> dict | None:
+    """Two-stage bucket sampling for aspiration content.
+
+    Stage 1: roll a bucket (same_category 80%, adjacent 15%, discovery 5%).
+    Stage 2: within the chosen bucket, sample proportional to relevance
+             scores using softmax with user-maturity temperature.
+    """
     storage = get_storage_client()
     knowledge = user.knowledge_state or {}
     current_category = current_video.category
     adjacent_categories = ADJACENCY.get(current_category, [])
 
-    # Temperature by user state
-    temperature = {"new": 1.5, "warming_up": 1.0, "established": 0.7}.get(
+    temperature = {"new": 1.2, "warming_up": 0.5, "established": 0.3}.get(
         user.maturity, 1.0
     )
 
-    scored_candidates = []
+    # -- Score candidates and assign to buckets --
+    buckets: dict[str, list[tuple[PoolCandidate, float, dict]]] = {
+        "same_category": [],
+        "adjacent": [],
+        "discovery": [],
+    }
+
     for candidate in pool:
         video = candidate.video
 
-        # Only score aspiration videos with gap scoring
         if video.content_type != "aspiration":
-            scored_candidates.append((candidate, 0.1))  # Low baseline for non-aspiration
+            buckets["discovery"].append((candidate, 0.1, {
+                "video_id": video.video_id, "relevance": "-",
+                "note": f"{video.content_type} baseline",
+            }))
             continue
 
-        # Load concept profile for the representative video
         key = f"videos/{video.video_id}/concept_profile.json"
         try:
             concept_profile = storage.get_json(key)
         except Exception:
-            scored_candidates.append((candidate, 0.1))
+            concept_profile = None
+
+        if not concept_profile:
+            bucket_name = _aspiration_bucket(
+                video.category, current_category, adjacent_categories,
+            )
+            buckets[bucket_name].append((candidate, 0.1, {
+                "video_id": video.video_id, "relevance": "-",
+                "note": "no concept profile",
+            }))
             continue
 
         cat_knowledge = knowledge.get(video.category, {})
-
-        # Gap score: sum(coverage * (1 - knowledge))
         relevance = sum(
             coverage * (1.0 - cat_knowledge.get(concept, 0.0))
             for concept, coverage in concept_profile.items()
         )
 
+        note = ""
         if candidate.is_revisit:
-            # Revisit penalty
             time_decay = 1.0 - math.exp(-candidate.days_since_completion / 30.0)
-            final_score = relevance * (1.0 - candidate.avg_quiz_score) * time_decay
-            reasoning.append(
-                f"  {video.video_id} (revisit): relevance={relevance:.2f}, "
-                f"quiz_score={candidate.avg_quiz_score:.2f}, "
-                f"time_decay={time_decay:.2f}, final={final_score:.2f}"
-            )
-        else:
-            final_score = relevance
-            reasoning.append(
-                f"  {video.video_id}: relevance={relevance:.2f}"
-            )
+            relevance = relevance * (1.0 - candidate.avg_quiz_score) * time_decay
+            note = f"revisit: decay={time_decay:.2f}"
 
-        # Apply category distribution weight
-        if video.category == current_category:
-            weight = 0.80
-        elif video.category in adjacent_categories:
-            weight = 0.15
-        else:
-            weight = 0.05
+        bucket_name = _aspiration_bucket(
+            video.category, current_category, adjacent_categories,
+        )
+        buckets[bucket_name].append((candidate, relevance, {
+            "video_id": video.video_id, "relevance": round(relevance, 2),
+            "note": note,
+        }))
 
-        final_score *= weight
-        scored_candidates.append((candidate, final_score))
-
-    if not scored_candidates:
+    # -- Stage 1: roll bucket --
+    target_weights = {"same_category": 0.80, "adjacent": 0.15, "discovery": 0.05}
+    non_empty = {k: v for k, v in buckets.items() if v}
+    if not non_empty:
         return None
 
-    candidates, scores = zip(*scored_candidates)
-    probabilities = _softmax(list(scores), temperature)
+    total_w = sum(target_weights[k] for k in non_empty)
+    effective = {k: target_weights[k] / total_w for k in non_empty}
 
-    reasoning.append(f"Aspiration pick: temperature={temperature}")
+    reasoning.append(f"Aspiration bucket sampling (temperature={temperature})")
+    for bname in ("same_category", "adjacent", "discovery"):
+        target = target_weights[bname]
+        if bname in non_empty:
+            cnt = len(non_empty[bname])
+            reasoning.append(
+                f"  bucket '{bname}': {effective[bname]:.0%} "
+                f"({cnt} candidate{'s' if cnt != 1 else ''})"
+            )
+        else:
+            reasoning.append(f"  bucket '{bname}': {target:.0%} target, empty → redistributed")
 
-    selected = _weighted_choice(list(candidates), probabilities)
+    r = random.random()
+    cumulative = 0.0
+    chosen_name = list(non_empty.keys())[-1]
+    for bname, eff_w in effective.items():
+        cumulative += eff_w
+        if r <= cumulative:
+            chosen_name = bname
+            break
+
+    reasoning.append(f"  → bucket selected: '{chosen_name}'")
+
+    # -- Stage 2: sample within bucket --
+    chosen = non_empty[chosen_name]
+    candidates_list = [c for c, _, _ in chosen]
+    scores = [s for _, s, _ in chosen]
+    details = [d for _, _, d in chosen]
+
+    if any(s > 0 for s in scores):
+        probabilities = _softmax(scores, temperature)
+        for detail, prob in zip(details, probabilities):
+            extra = f" [{detail['note']}]" if detail.get("note") else ""
+            reasoning.append(
+                f"  {detail['video_id']}: relevance={detail['relevance']}, "
+                f"probability={prob:.1%}{extra}"
+            )
+        selected = _weighted_choice(candidates_list, probabilities)
+    else:
+        n = len(candidates_list)
+        for detail in details:
+            extra = f" [{detail['note']}]" if detail.get("note") else ""
+            reasoning.append(
+                f"  {detail['video_id']}: probability={1/n:.1%}{extra}"
+            )
+        selected = random.choice(candidates_list)
+
     if selected:
-        reasoning.append(f"Slot 2 selected: {selected.video.video_id}")
+        reasoning.append(
+            f"Slot 2 selected: {selected.video.video_id} "
+            f"(from '{chosen_name}' bucket)"
+        )
         return _video_to_dict(selected.video)
 
     return None
+
+
+def _aspiration_bucket(
+    video_category: str, current_category: str, adjacent_categories: list[str],
+) -> str:
+    if video_category == current_category:
+        return "same_category"
+    if video_category in adjacent_categories:
+        return "adjacent"
+    return "discovery"
 
 
 def _bucket_pick(
@@ -366,29 +433,31 @@ def _bucket_pick(
         f"other_{content_type}={len(other_same_type)}, aspiration={len(aspiration)}"
     )
 
-    # Build weighted bucket selection
+    bucket_names = ["same_category", f"other_{content_type}", "aspiration"]
     buckets = [
         (same_category, same_pct),
         (other_same_type, other_same_type_pct),
         (aspiration, aspiration_pct),
     ]
 
-    # Filter out empty buckets and redistribute
-    non_empty = [(b, w) for b, w in buckets if b]
+    non_empty = [(b, w, n) for (b, w), n in zip(buckets, bucket_names) if b]
     if not non_empty:
         return None
 
-    total_weight = sum(w for _, w in non_empty)
+    total_weight = sum(w for _, w, _ in non_empty)
+    for _, weight, name in non_empty:
+        reasoning.append(f"  bucket '{name}': {weight/total_weight:.0%} ({weight:.0%} target)")
+
     r = random.random() * total_weight
     cumulative = 0.0
 
-    for bucket, weight in non_empty:
+    for bucket, weight, name in non_empty:
         cumulative += weight
         if r <= cumulative:
             selected = random.choice(bucket)
-            reasoning.append(f"Slot 2 selected: {selected.video.video_id}")
+            reasoning.append(f"Slot 2 selected: {selected.video.video_id} (from '{name}' bucket)")
             return _video_to_dict(selected.video)
 
     selected = random.choice(non_empty[-1][0])
-    reasoning.append(f"Slot 2 selected: {selected.video.video_id}")
+    reasoning.append(f"Slot 2 selected: {selected.video.video_id} (from '{non_empty[-1][2]}' bucket)")
     return _video_to_dict(selected.video)
